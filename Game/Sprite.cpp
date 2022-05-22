@@ -11,7 +11,7 @@ void Sprite::addAnimation(std::string fileName) {
 	std::string properPath = data_path(fileName);
 	fstream.open(properPath, std::ios::in | std::ios::binary);
 	if (fstream.is_open()) {
-
+		std::cout << fileName << " opened succesfully\n";
 		int nameSize;
 		std::string name;
 		int width, height;
@@ -40,12 +40,15 @@ void Sprite::addAnimation(std::string fileName) {
 		animation.name = name;
 		animation.frameTime = frameLength;
 
+		std::cout << "Meta data gained succesfully\n";
+
 		//Layers
 		for (int l = 0; l < numLayers; l++) { 
 			int material;
 			fstream.getline(intline, 32);
 			material = std::stoi(std::string(intline));
 			animation.layers[l].material = material;
+
 
 			for (int t = 0; t < numFrames; t++) {
 				int texSize;
@@ -66,15 +69,17 @@ void Sprite::addAnimation(std::string fileName) {
 				//As we want the tex to be a clearly defined sprite, use nearest neighbor
 				if (data) {
 					//Creating a texture: (using data created above)
-					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 					glGenerateMipmap(GL_TEXTURE_2D);
 				}
 				else {
 					std::cout << "Failed to load texture" << std::endl;
 					assert(false);
 				}
+				std::cout << "layer " << l << " frame " << t << " texture created\n";
 			}
 		}
+		std::cout << "All data in " <<name << " read\n";
 		fstream.close(); //Close file before continuing
 		pipeline.animations->insert_or_assign(name.c_str(), animation);
 		pipeline.numAnimations++; //returns true if new addition to library

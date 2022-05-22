@@ -26,6 +26,8 @@
 #include <memory>
 #include <algorithm>
 
+SDL_Window* window = nullptr;
+
 #ifdef _WIN32
 extern "C" { uint32_t GetACP(); }
 #endif
@@ -65,7 +67,7 @@ int main(int argc, char **argv) {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
 	//create window:
-	SDL_Window *window = SDL_CreateWindow(
+	window = SDL_CreateWindow(
 		"gp21 game3: require sound", //TODO: remember to set a title for your game!
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		1280, 720, //TODO: modify window size if you'd like
@@ -127,6 +129,8 @@ int main(int argc, char **argv) {
 		window_size = glm::uvec2(w, h);
 		SDL_GL_GetDrawableSize(window, &w, &h);
 		drawable_size = glm::uvec2(w, h);
+		screenH = h;
+		screenW = w;
 		glViewport(0, 0, drawable_size.x, drawable_size.y);
 	};
 	on_resize();

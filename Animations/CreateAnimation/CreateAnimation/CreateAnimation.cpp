@@ -99,13 +99,20 @@ int main()
             if (data == NULL) {
                 std::cout << "ERROR: Image load failed\n";
                 fclose(outFile);
+                return 1;
             }
             assert(data);
             //Each channel is 8 bits, so 1 byte per channel.
             int sizeofTex = nrChannels * height * width;
+            if (nrChannels < 4) {
+                std::cout << "ERROR: Data should be formatted with at least RGBA\n";
+                fclose(outFile);
+                return 1;
+            }
             if (w != width || h != height) {
                 std::cout << "ERROR: Width and height do not match.\n";
                 fclose(outFile);
+                return 1;
             }
             assert(w == width && h == height);
             std::cout << "Data loaded succesfully. Texture size " << sizeofTex << std::endl;
@@ -124,6 +131,7 @@ int main()
     }
     std::cout << "Animation written\n";
     fclose(outFile);
+    return 0;
 }
 
 //Animation data format

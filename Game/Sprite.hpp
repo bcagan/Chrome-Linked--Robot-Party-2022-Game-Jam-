@@ -28,12 +28,13 @@ A sprite is defined in this game as follow:
 #include <list>
 #include <memory>
 #include <functional>
-#include <string>
 #include <vector>
 #include <unordered_map>
 #include <iostream>
 #include <assert.h>
 #include <string>
+
+#define SPRITE_SCALE 32.f 
 
 
 class Sprite
@@ -49,6 +50,8 @@ public:
 	}
 
 	void addAnimation(std::string fileName);
+
+	std::string name = "";
 
 
 	//Animations
@@ -91,12 +94,14 @@ public:
 	glm::vec3 pos; //World space position
 	int width = 8;
 	int height = 8;
+	glm::vec2 size = glm::vec2(1.f); //Size modifier
 
 	struct Pipeline {
 		//Purely storage to pass bbox info the transform
 		glm::vec3 min = glm::vec3(0.0f);
 		glm::vec3 max = glm::vec3(0.0f);
 
+		bool isGui = false;
 
 		//uniforms:
 		GLuint OBJECT_TO_CLIP_mat4 = -1U; //uniform location for object to clip space matrix
@@ -104,9 +109,10 @@ public:
 		GLuint NORMAL_TO_LIGHT_mat3 = -1U; //uniform location for normal to light space (== world space) matrix
 
 		//Lighting
+		GLuint DO_LIGHT_bool = -1U;
 		GLuint LIGHT_COUNT_uint = -1U;
 		GLuint LIGHT_COUNT_float = -1U;
-
+		bool doLight = true;
 
 		GLuint LIGHT_TYPE_int_array = -1U;
 		GLuint LIGHT_LOCATION_vec3_array = -1U;
@@ -145,7 +151,6 @@ public:
 
 		void updateAnimation() {
 			SpriteAnimation currentRef = (*animations)[currentAnimation];
-			std::cout << "curframetime " << currentFrameTime << "and ref frame time " << currentRef.frameTime << " and cur frame " << currentFrame << std::endl;
 			currentFrameTime++;
 			if (currentFrameTime == currentRef.frameTime) {
 				currentFrameTime = 0;

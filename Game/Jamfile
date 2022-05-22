@@ -152,6 +152,7 @@ COMMON_NAMES =
 	DrawLines
 	ColorProgram
 	Sprite
+	Level
 	Scene
 	Mesh
 	load_save_png

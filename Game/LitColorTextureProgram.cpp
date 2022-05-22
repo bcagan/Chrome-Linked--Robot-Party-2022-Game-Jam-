@@ -34,6 +34,7 @@ Load< LitColorTextureProgram > lit_color_texture_program(LoadTagEarly, []() -> L
 	lit_color_texture_program_pipeline.TEX_ARR_sampler2D_array = ret->TEX_ARR_sampler2D_array;
 	lit_color_texture_program_pipeline.LAYER_COUNT_uint = ret->LAYER_COUNT_uint;
 	lit_color_texture_program_pipeline.viewDir_vec3 = ret->viewDir_vec3;
+	lit_color_texture_program_pipeline.DO_LIGHT_bool = ret->DO_LIGHT_bool;
 	lit_color_texture_program_sprite_pipeline.LIGHT_COUNT_uint = ret->LIGHT_COUNT_uint;
 	lit_color_texture_program_sprite_pipeline.LIGHT_COUNT_float = ret->LIGHT_COUNT_float;
 	lit_color_texture_program_sprite_pipeline.LIGHT_TYPE_int_array = ret->LIGHT_TYPE_int_array;
@@ -45,6 +46,7 @@ Load< LitColorTextureProgram > lit_color_texture_program(LoadTagEarly, []() -> L
 	lit_color_texture_program_sprite_pipeline.TEX_ARR_sampler2D_array = ret->TEX_ARR_sampler2D_array;
 	lit_color_texture_program_sprite_pipeline.LAYER_COUNT_uint = ret->LAYER_COUNT_uint;
 	lit_color_texture_program_sprite_pipeline.viewDir_vec3 = ret->viewDir_vec3;
+	lit_color_texture_program_sprite_pipeline.DO_LIGHT_bool = ret->DO_LIGHT_bool;
 
 
 	//make a 1-pixel white texture to bind by default:
@@ -128,6 +130,7 @@ LitColorTextureProgram::LitColorTextureProgram() {
 		"uniform vec3 LIGHT_ENERGY[" + std::to_string(maxLights) + "];\n"
 		"uniform float LIGHT_CUTOFF[" + std::to_string(maxLights) + "];\n"
 		"uniform vec3 viewDir;\n"//ADDED
+		"uniform uint DO_LIGHT;\n"//ADDED
 		"in vec3 position;\n"
 		"in vec3 normal;\n"
 		"in vec4 color;\n"
@@ -144,17 +147,21 @@ LitColorTextureProgram::LitColorTextureProgram() {
 		"	float emissiveFactor = 0.f;\n"
 		"	for(uint layer = 0u; layer < LAYER_COUNT; ++layer){ \n"
 		"		if(MATERIAL_TYPE[layer] == 0){\n"//Albedo
-		"			albedo = vec4(color.rgb*texture(TEX_ARR[layer],texCoord).rgb,color.a);\n"
+		"			albedo = color*texture(TEX_ARR[layer],texCoord);\n"
 		"		}\n"
 		"		if(MATERIAL_TYPE[layer] == 1){\n"//Specular - Type 1
-		"			shininess = 3.f;\n"
-		"			specular = vec3(color.rgb*texture(TEX_ARR[layer],texCoord).rgb);\n"
+		"			shininess = 12.f;\n"
+		"			specular =  color.rgb*texture(TEX_ARR[layer],texCoord).rgb;\n"
 		"		}\n"
 		"		if(MATERIAL_TYPE[layer] == 2){\n"//Emissive - Type 1
 		"			emissiveFactor = 1.f;\n"
-		"			emissive = vec3(color.rgb*texture(TEX_ARR[layer],texCoord).rgb);\n"
+		"			emissive =  color.rgb*texture(TEX_ARR[layer],texCoord).rgb;\n"
 		"		}\n"
 		"	}\n"
+		"	if(LAYER_COUNT == 0u){\n" //Account for vertex color only meshes
+		"		albedo = color;\n"
+		"	}\n"
+		"	if(DO_LIGHT > 0u){\n"
 		"	for(uint light = 0u; light < LIGHT_COUNT; ++light){ \n"
 		"		int lightType = LIGHT_TYPE[light];\n"
 		"		vec3 lightLocation = LIGHT_LOCATION[light];\n"
@@ -170,6 +177,7 @@ LitColorTextureProgram::LitColorTextureProgram() {
 		"			vec3 reflectDir = reflect(-l,n);"
 		"			vec3 diffuse = albedo.rgb * nl * lightEnergy;\n"
 		"			float specularFactor = pow(max(dot(viewDir,reflectDir),0.0),shininess);\n"
+		"			if(shininess == 0.0) specularFactor = 0.f;\n"
 		"			vec3 specularL = specular.rgb * nl  * specularFactor * lightEnergy;\n"
 		"			vec3 emissiveL = emissive.rgb * emissiveFactor;\n"
 		"			total += diffuse + specularL + emissiveL;\n"
@@ -192,6 +200,7 @@ LitColorTextureProgram::LitColorTextureProgram() {
 		"				vec3 reflectDir = reflect(-lightDir,n);\n"
 		"				vec3 diffuse = albedo.rgb * max(dot(n,l),0.0) * lightEnergy;\n"
 		"				float specularFactor = pow(max(dot(viewDir,reflectDir),0.0),shininess);\n"
+		"				if(shininess == 0.0) specularFactor = 0.f;\n"
 		"				vec3 specularL = specular.rgb * specularFactor * lightEnergy;\n"
 		"				vec3 emissiveL = emissive.rgb * emissiveFactor;\n"
 		"				total += diffuse + specularL + emissiveL;\n"
@@ -200,8 +209,10 @@ LitColorTextureProgram::LitColorTextureProgram() {
 		"		}\n"
 		"	}\n"
 		"	vec4 texColor = vec4(total, albedo.a);\n"
-		//"	fragColor = vec4(1.0-t)*texColor + vec4(t)*(vec4(0.25,0.25,0.5,1.0));"
+//		"	vec4 texColor = vec4(specular.rgb,albedo.a);\n"
 		"	fragColor = texColor;\n"
+		"	}\n"
+		"	else fragColor = albedo;\n"
 		"}\n"
 	);
 	//As you can see above, adjacent strings in C/C++ are concatenated.
@@ -217,6 +228,7 @@ LitColorTextureProgram::LitColorTextureProgram() {
 	OBJECT_TO_LIGHT_mat4x3 = glGetUniformLocation(program, "OBJECT_TO_LIGHT");
 	NORMAL_TO_LIGHT_mat3 = glGetUniformLocation(program, "NORMAL_TO_LIGHT");
 
+	DO_LIGHT_bool = glGetUniformLocation(program, "DO_LIGHT");
 	LIGHT_COUNT_uint = glGetUniformLocation(program, "LIGHT_COUNT");
 	LIGHT_COUNT_float = glGetUniformLocation(program, "LIGHT_COUNT_F");
 
@@ -227,9 +239,9 @@ LitColorTextureProgram::LitColorTextureProgram() {
 	LIGHT_CUTOFF_float_array = glGetUniformLocation(program, "LIGHT_CUTOFF");
 
 	MATERIAL_TYPE_int_array = glGetUniformLocation(program, "MATERIAL_TYPE");
-	lit_color_texture_program_pipeline.TEX_ARR_sampler2D_array = glGetUniformLocation(program, "TEX_ARR");
-	lit_color_texture_program_pipeline.LAYER_COUNT_uint = glGetUniformLocation(program, "LAYER_COUNT");
-	lit_color_texture_program_pipeline.viewDir_vec3 = glGetUniformLocation(program, "viewDir");
+	TEX_ARR_sampler2D_array = glGetUniformLocation(program, "TEX_ARR");
+	LAYER_COUNT_uint = glGetUniformLocation(program, "LAYER_COUNT");
+	viewDir_vec3 = glGetUniformLocation(program, "viewDir");
 
 
 

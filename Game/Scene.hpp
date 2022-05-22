@@ -96,6 +96,7 @@ struct Scene {
 			std::function< void() > set_uniforms; //(optional) function to set any other useful uniforms
 
 			//Lighting
+			GLuint DO_LIGHT_bool = -1U;
 			GLuint LIGHT_COUNT_uint = -1U;
 			GLuint LIGHT_COUNT_float = -1U;
 
@@ -166,11 +167,11 @@ struct Scene {
 	void draw(Camera const& camera) const;
 
 	//All sprite drawining is handled here, including updating animations, quad creation, translation, and drawing
-	void spriteDraw(Camera const& camera);
+	void spriteDraw(Camera const& camera, bool proj = false);
 
 	//..sometimes, you want to draw with a custom projection matrix and/or light space:
 	void draw(glm::mat4 const &world_to_clip, glm::mat4x3 const &world_to_light = glm::mat4x3(1.0f)) const;
-	void spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light = glm::mat4x3(1.0f));
+	void spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light = glm::mat4x3(1.0f), bool proj = false);
 
 
 	//add transforms/objects/cameras from a scene file to this scene:

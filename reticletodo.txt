@@ -1,0 +1,4 @@
+Quick reticle coding steps:
+Figure out how to stop mouse from stopping at window border
+Rewrite code to use center of retical (have to project back to
+1.0 plane and get center, then project back to reticle loc)
