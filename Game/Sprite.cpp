@@ -5,13 +5,13 @@
 #include <fstream>
 #include "data_path.hpp"
 
-void Sprite::addAnimation(std::string fileName) {
+void Sprite::addAnimation(std::string fileName, bool verbosity) {
 	std::ifstream fstream;
-	std::cout << "starting load of " << fileName << std::endl;
+	if(verbosity) std::cout << "starting load of " << fileName << std::endl;
 	std::string properPath = data_path(fileName);
 	fstream.open(properPath, std::ios::in | std::ios::binary);
 	if (fstream.is_open()) {
-		std::cout << fileName << " opened succesfully\n";
+		if (verbosity) 	std::cout << fileName << " opened succesfully\n";
 		int nameSize;
 		std::string name;
 		int width, height;
@@ -40,7 +40,7 @@ void Sprite::addAnimation(std::string fileName) {
 		animation.name = name;
 		animation.frameTime = frameLength;
 
-		std::cout << "Meta data gained succesfully\n";
+		if (verbosity) std::cout << "Meta data gained succesfully\n";
 
 		//Layers
 		for (int l = 0; l < numLayers; l++) { 
@@ -76,15 +76,15 @@ void Sprite::addAnimation(std::string fileName) {
 					std::cout << "Failed to load texture" << std::endl;
 					assert(false);
 				}
-				std::cout << "layer " << l << " frame " << t << " texture created\n";
+				if (verbosity) 	std::cout << "layer " << l << " frame " << t << " texture created\n";
 			}
 		}
-		std::cout << "All data in " <<name << " read\n";
+		if (verbosity) std::cout << "All data in " <<name << " read\n";
 		fstream.close(); //Close file before continuing
 		pipeline.animations->insert_or_assign(name.c_str(), animation);
 		pipeline.numAnimations++; //returns true if new addition to library
 
-		std::cout << fileName << " loaded succesfully\n";
+		if (verbosity) std::cout << fileName << " loaded succesfully\n";
 	}
 	else {
 		std::cout << "ERROR: Error adding annimation " << fileName << std::endl;

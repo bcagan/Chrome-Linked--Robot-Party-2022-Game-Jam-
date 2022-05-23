@@ -77,7 +77,6 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	for (auto& enem : level.toSpawn) {
 		addEnemyCheck(enem.ID, enem.worldPos, enem.spawnDist);
 	}
-	std::cout << "Number of enemies in level: " << toSpawn.size() << std::endl;
 	
 
 	//Scene sprite params need to be set before spirtes can be added
@@ -114,6 +113,11 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		projectile.pipeline.defaultAnimation = (*projectile.pipeline.animations)["projectile1"];
 		projectile.width = 16; projectile.height = 16;
 		projectile.size = glm::vec2(0.5f);
+	//	projectile.addAnimation("/Sources/Animations/ANIMATE_projectileEnSlow.txt");
+		projectile.addAnimation("/Sources/Animations/ANIMATE_projectileEnRapid.txt");
+		projectile.addAnimation("/Sources/Animations/ANIMATE_projectilePlayerSlow.txt");
+		projectile.addAnimation("/Sources/Animations/ANIMATE_projectilePlayerRapid.txt");
+		projectile.addAnimation("/Sources/Animations/ANIMATE_projectileDark.txt");
 		scene.spriteLib["projectile1"] = projectile;
 
 	}
@@ -230,7 +234,6 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	grazaloidJet.shotOffset = glm::vec2(0.f);
 
 	//Both envocron pilots
-	envocronMeleePilot.health = 2.f * grazaloidJet.health;
 	envocronMeleePilot.path = std::vector<std::pair<int, glm::vec2>>();
 	envocronMeleePilot.path.push_back(std::make_pair(1, glm::vec2(0.0f)));
 	envocronMeleePilot.sprite = scene.spriteLib["test"];
@@ -238,6 +241,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	//For both, enemy cooldown is despawn timer
 
 	//Ranged only
+	envocronRangedPilot.health = 3.f * grazaloidJet.health;
 	envocronRangedPilot = envocronMeleePilot;
 	envocronRangedPilot.shotCooldown = 40;
 	envocronRangedPilot.enemyCooldown = 1200;
@@ -246,9 +250,12 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	envocronRangedPilot.sprite.name = "enemyEnvocronRa";
 
 	//Melee only
-	
-	envocronMeleePilot.shotCooldown = 50;
+	envocronMeleePilot.health = 6.f * envocronRangedPilot.health;
+	envocronMeleePilot.shotCooldown = 300;
 	envocronMeleePilot.enemyCooldown = 3000;
+	envocronMeleePilot.toPlayerTime = 20;
+	envocronMeleePilot.attackTime = ENEMY_MELEE_TIME;
+	envocronMeleePilot.returnTime = 30;
 	envocronMeleePilot.projType = Projectile::PROJ_Melee;
 	envocronMeleePilot.type = Enemy::ENEMY_envoPilotMe;
 	envocronMeleePilot.sprite.name = "enemyEnvocronMe";
@@ -285,10 +292,19 @@ void PlayMode::updateAllEnemies() {
 			}
 		else
 		{
+			if (iter->sprite.pipeline.hitTimer > 0) iter->sprite.pipeline.hitTimer--;
 			//Health drop
 			int projHitRes = projectileHit(iter->sprite);
-			if (projHitRes == Projectile::PROJ_RapidPlayer) iter->health -= rapidPlayerDam;
-			else if (projHitRes == Projectile::PROJ_SlowPlayer) iter->health -= slowPlayerDam;
+			if ((!iter->inMelee || (iter->inMelee && ((iter->meleeTimer > iter->toPlayerTime + iter->attackTime))))
+				&& projHitRes == Projectile::PROJ_RapidPlayer && iter->sprite.pipeline.hitTimer < 18 ) {
+				iter->health -= rapidPlayerDam;
+				iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
+			}
+			else if ((!iter->inMelee || (iter->inMelee && (iter->meleeTimer < iter->toPlayerTime || iter->meleeTimer > iter->toPlayerTime + iter->attackTime)))
+				&& projHitRes == Projectile::PROJ_SlowPlayer && iter->sprite.pipeline.hitTimer == 0) {
+				iter->health -= slowPlayerDam;
+				iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
+			}
 			if (iter->health <= 0.f) {
 				iter->alive = false;
 				iter->sprite.pipeline.setAnimation("slowTest"); //Temp to add defeat animation
@@ -297,7 +313,7 @@ void PlayMode::updateAllEnemies() {
 				//Movement:
 				int nextSegment = iter->segment;
 				//Update path
-				if (!iter->inDodge) {
+				if (!iter->inDodge && !iter->inMelee) {
 					iter->framesInSegment--;
 					if (iter->framesInSegment == 0) {
 						iter->segment++;
@@ -310,7 +326,7 @@ void PlayMode::updateAllEnemies() {
 				float offset = (float)iter->framesInSegment / (float)iter->path[iter->segment].first;
 				glm::vec2 posOffset = glm::vec2(offset) * iter->path[iter->segment].second + glm::vec2(1.f - offset) * iter->path[nextSegment].second;
 				glm::vec4 cameraPosModified = glm::vec4(camera->transform->make_world_to_local() * glm::vec4(iter->initPos, 1.f) + glm::vec3(posOffset, 0.f), 1.f);
-				iter->sprite.pos = camera->transform->make_local_to_world() * cameraPosModified;
+				if(!iter->inMelee)iter->sprite.pos = camera->transform->make_local_to_world() * cameraPosModified;
 				//Note pos is always offset along with the camera movement, so always based on initPos, which is built when adding to spawned list
 				
 				//Atacking:
@@ -320,6 +336,7 @@ void PlayMode::updateAllEnemies() {
 					iter->shotTimer++;
 					if (iter->shotTimer == iter->shotCooldown) {
 						Projectile newProj = genericProjectile1;
+						newProj.projSprite.pipeline.setAnimation("projectileEnRapid");
 						newProj.type = Projectile::PROJ_RapidEnemy;
 						newProj.projSprite.pos = iter->sprite.pos;
 						newProj.motionVector = normalize(camera->transform->make_local_to_world()*(enemProjSpeed*glm::vec4(0.f,0.f,1.0f,-1.f)));
@@ -357,17 +374,52 @@ void PlayMode::updateAllEnemies() {
 					}
 					break;
 				case(Enemy::ENEMY_envoPilotMe):
+					if (!iter->inMelee) {
+						iter->shotTimer++;
+					}
 					iter->enemyTimer++;
+
 					if (iter->enemyTimer > iter->enemyCooldown) {
 						if (iter->enemyTimer > iter->enemyCooldown + 30) {
 							toDespawn.push_back(iter);
 						}
 						else {
-							iter->initPos += glm::vec3(0.f, 0.f, .1f);
+							iter->initPos += glm::vec3(0.f, 0.f, 0.1f);
 						}
 					}
-					else {
-						//Figure out melee attack
+					else if(iter->shotTimer > iter->shotCooldown){
+						if (iter->meleeTimer == 0) {
+							iter->startPos = iter->sprite.pos;
+							iter->inMelee = true;
+							iter->targetPos = mech.playerSprite->pos + glm::vec3(0.f, 0.5f, 0.0f);
+						}
+						if (iter->meleeTimer < iter->toPlayerTime) {
+							iter->sprite.pos = (iter->targetPos - iter->startPos) * ((float)iter->meleeTimer / iter->toPlayerTime) + iter->startPos;
+						}
+						else if (iter->meleeTimer == iter->toPlayerTime) {
+							iter->attackPos = iter->sprite.pos;
+							Projectile newProj = genericProjectile1;
+							newProj.type = Projectile::PROJ_MeleeEnemy;
+							newProj.projSprite.pos = iter->sprite.pos;
+							newProj.motionVector = glm::vec3(0.f);
+							newProj.projSprite.doDraw = false;
+							newProj.meleeTimer = 0;
+							projectiles.push_back(newProj);
+						}
+						else if (iter->meleeTimer < iter->toPlayerTime + iter->attackTime) {
+							iter->sprite.pos = iter->attackPos;
+						}
+						else {
+							float soFar = (float)(iter->meleeTimer - iter->toPlayerTime - iter->attackTime);
+							float percentageTraveled = soFar / (float)(iter->returnTime);
+							iter->sprite.pos = (iter->startPos - iter->attackPos) * percentageTraveled + iter->attackPos;
+						}
+						iter->meleeTimer++;
+						if (iter->meleeTimer == iter->returnTime + iter->toPlayerTime + iter->attackTime) {
+							iter->shotTimer = 0;
+							iter->meleeTimer = 0;
+							iter->inMelee = false;
+						}
 					}
 					break;
 				case(Enemy::ENEMY_EnvoPilotRa):
@@ -635,6 +687,12 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
 void PlayMode::createProjectileMech(int type, glm::vec3 motionVec, glm::vec3 playerPos) {
 	Projectile newProj = genericProjectile1;
+	if (type == Projectile::PROJ_RapidPlayer) {
+		newProj.projSprite.pipeline.setAnimation(std::string("projectilePlayerRapid"));
+	}
+	else {
+		newProj.projSprite.pipeline.setAnimation("projectilePlayerSlow");
+	}
 	newProj.type = type;
 	newProj.projSprite.pos = playerPos + normalize(motionVec) * 0.01f;
 	newProj.motionVector = normalize(motionVec);
@@ -650,6 +708,10 @@ void PlayMode::updateProjectiles(float elapsed) {
 		float projCameraDepth = (cam.transform->make_world_to_local() * glm::vec4(proj.projSprite.pos, 1.f)).z;
 		if (projCameraDepth < -projCutoff || projCameraDepth > 1.f) {
 			delIterators.push_back(it);
+		}
+		else if (it->type == it->PROJ_MeleeEnemy) {
+			it->meleeTimer++;
+			if (it->meleeTimer > it->meleeTime) delIterators.push_back(it);
 		}
 	}
 	for (int itInd = 0; itInd < delIterators.size(); itInd++) {
@@ -693,7 +755,7 @@ int PlayMode::projectileHit(Sprite hitSprite) {
 			if (temp >= 0) return temp;
 		}
 		else if((proj.type == Projectile::PROJ_RapidEnemy || proj.type == 
-			Projectile::PROJ_SlowEnemy) && (hitSprite.name == "player")) {
+			Projectile::PROJ_SlowEnemy || proj.type == Projectile::PROJ_MeleeEnemy) && (hitSprite.name == "player")) {
 			int temp = projInter(proj, hitSprite, spriteHeight, spriteWidth, spritePos);
 			if (temp >= 0) return temp;
 		}
@@ -869,6 +931,11 @@ void PlayMode::offsetObjects() {
 	mech.controlReticle->pos += level.posOffsetDelta;
 	for (auto& iter : enemies) {
 		if(iter.alive) iter.initPos += level.posOffsetDelta;
+		if (iter.alive && iter.inMelee) {
+			iter.attackPos += level.posOffsetDelta;
+			iter.startPos += level.posOffsetDelta;
+			iter.targetPos += level.posOffsetDelta;
+		}
 	}
 	for (auto& iter : projectiles) {
 		iter.projSprite.pos += level.posOffsetDelta;
@@ -1070,8 +1137,10 @@ void PlayMode::update(float elapsed) {
 
 
 		//Update player health
+		if (mech.playerSprite->pipeline.hitTimer > 0)mech.playerSprite->pipeline.hitTimer--;
 		int hitRes = hitRes = projectileHit(*(mech.playerSprite));
-		if (hitRes != -1) {
+		if (hitRes != -1 && mech.playerSprite->pipeline.hitTimer == 0) {
+			mech.playerSprite->pipeline.hitTimer = mech.playerSprite->pipeline.hitTime;
 			switch (hitRes) {
 			case(Projectile::PROJ_RapidEnemy):
 				mech.health -= 0.3f;
@@ -1083,13 +1152,16 @@ void PlayMode::update(float elapsed) {
 				mech.health -= 5.0f;
 				break;
 			case(Projectile::PROJ_MeleeEnemy):
-				mech.health -= 5.0f;
-				mech.meleeHitInvinceTimer++;
+				if (mech.meleeHitInvinceTimer == 0) {
+					mech.health -= 5.0f;
+					mech.meleeHitInvinceTimer = mech.meleeHitInvince;
+				}
 				break;
 			default:
 				break;
 			}
 		}
+		if (mech.meleeHitInvinceTimer > 0) mech.meleeHitInvinceTimer--;
 		//std::cout << "Health: " << mech.health << std::endl;
 		//If still alive, spawn enemies
 		updateAllEnemies();

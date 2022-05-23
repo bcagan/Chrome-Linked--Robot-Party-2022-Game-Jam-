@@ -1,7 +1,7 @@
 ENEMIES
 ENEMY_grazaJet 0.0f 20.f 0.0f 20.f
-ENEMY_envoPilotRa 1.0f 20.0f 0.0f 20.f
-ENEMY_envoPilotMe 0.5f 20.f 0.5f 20.f
+ENEMY_envoPilotMe 1.0f 20.0f 0.0f 20.f
+ENEMY_envoPilotRa 0.5f 20.f 0.5f 20.f
 ENEMY_grazaJet 0.0f 320.f 1.0f 20.f
 ENEMY_envoPilotRa 1.0f 320.0f 0.0f 20.f
 ENEMY_envoPilotRa 0.0f 320.0f 0.0f 20.f

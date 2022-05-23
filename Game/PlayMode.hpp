@@ -15,6 +15,8 @@
 
 #define PLAYMODE_H
 
+#define ENEMY_MELEE_TIME 60
+
 
 
 //Global screen width and height
@@ -63,6 +65,9 @@ struct PlayMode : Mode {
 		float enemProjSpeed = 15.f;
 		struct Projectile
 		{
+
+			int meleeTimer = 0;
+			int meleeTime = ENEMY_MELEE_TIME;
 			glm::vec3 motionVector;
 			Sprite projSprite;
 			int type = PROJ_SlowPlayer;
@@ -75,7 +80,7 @@ struct PlayMode : Mode {
 
 		//Proj damage
 		float rapidPlayerDam = 1.5f;
-		float slowPlayerDam = 12.f;
+		float slowPlayerDam = 8.f;
 
 		Projectile genericProjectile1;
 		std::list<Projectile> projectiles;
@@ -85,7 +90,7 @@ struct PlayMode : Mode {
 		int slowFiredCooldown = 30;
 		int rightFiredCooldown = slowFiredCooldown;
 		int fireCooldown = 30;
-		float projZDelta =1.f;
+		float projZDelta =1.5f;
 
 
 		//Enemies
@@ -120,6 +125,15 @@ struct PlayMode : Mode {
 			bool posDodge = false;
 			int dodgeCount = 30;
 			int dodgeTime = 0;
+
+			bool inMelee = false;
+			int meleeTimer = 0;
+			int toPlayerTime = 90;
+			int attackTime = 60;
+			int returnTime = 30;
+			glm::vec3 attackPos = glm::vec3(0.f);
+			glm::vec3 startPos = glm::vec3(0.f);
+			glm::vec3 targetPos = glm::vec3(0.f);
 			
 
 			enum{ENEMY_envoPilotMe, ENEMY_EnvoPilotRa, ENEMY_grazaJet, BOSS_Jebb, BOSS_Gil, BOSS_Dark};
@@ -179,7 +193,7 @@ struct PlayMode : Mode {
 		Sprite* controlReticle;
 
 		float health = 200.f;
-		int meleeHitInvince = 30;
+		int meleeHitInvince = 45;
 		int meleeHitInvinceTimer = 0;
 	} mech; 
 

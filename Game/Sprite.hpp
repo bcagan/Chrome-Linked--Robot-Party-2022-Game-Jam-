@@ -49,7 +49,10 @@ public:
 	{
 	}
 
-	void addAnimation(std::string fileName);
+	void addAnimation(std::string fileName) {
+		addAnimation(fileName, false);
+	};
+	void addAnimation(std::string fileName, bool verbosity);
 
 	std::string name = "";
 
@@ -96,6 +99,7 @@ public:
 	int height = 8;
 	glm::vec2 size = glm::vec2(1.f); //Size modifier
 
+	bool doDraw = true;
 	struct Pipeline {
 		//Purely storage to pass bbox info the transform
 		glm::vec3 min = glm::vec3(0.0f);
@@ -161,6 +165,10 @@ public:
 				}
 			}
 		}
+
+		//Hit effect
+		int hitTimer = 0;
+		int hitTime = 20;
 
 	} pipeline;
 

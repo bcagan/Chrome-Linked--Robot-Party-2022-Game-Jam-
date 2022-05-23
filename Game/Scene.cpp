@@ -247,6 +247,7 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		//printf("Entered sprite draw\n");
 		if (sprite.name.substr(0, 10) == std::string("projectile") && !proj) continue;
 		if (sprite.name.substr(0, 10) != std::string("projectile") && proj) continue;
+		if (!sprite.doDraw) continue;
 
 		//Reference to sprite's pipeline for convenience:
 		spriteIterator->pipeline.updateAnimation();
@@ -257,6 +258,11 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		float width = (float)sprite.width/SPRITE_SCALE*sprite.size.x;
 		float height = (float)sprite.height/SPRITE_SCALE * sprite.size.y;
 		std::array<Vertex, 6> vertices;
+		glm::vec4 quadColor = glm::vec4(1.0f);
+		if (pipeline.hitTimer > 0) {
+			float percentage = (float)pipeline.hitTimer / (float)pipeline.hitTime;
+			quadColor = glm::vec4(1.0f, percentage * 0.5f + 0.5f, percentage * 0.5f + 0.5f, 1.0f);
+		}
 
 		vertices[0].Position = glm::vec4(0.f, 0.f, height, 1.0f);
 		vertices[1].Position = glm::vec4(0.f, 0.f, 0.f, 1.0f);
@@ -266,7 +272,7 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		vertices[5].Position = glm::vec4(width, 0.f, height, 1.0f);
 		for (size_t c = 0; c < 6; c++) {
 			vertices[c].Normal = glm::vec3(0.0f, 0.0f, 1.0f);
-			vertices[c].Color = glm::vec4(1.0, 1.0f, 1.0f, 1.0f);
+			vertices[c].Color = quadColor;
 		}
 		vertices[0].TexCoord = glm::vec2(0.0f, 0.0f);
 		vertices[1].TexCoord = glm::vec2(0.0f, 1.0f);
