@@ -256,7 +256,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	envocronMeleePilot.toPlayerTime = 20;
 	envocronMeleePilot.attackTime = ENEMY_MELEE_TIME;
 	envocronMeleePilot.returnTime = 30;
-	envocronMeleePilot.projType = Projectile::PROJ_Melee;
+	envocronMeleePilot.projType = Projectile::PROJ_MeleeEnemy;
 	envocronMeleePilot.type = Enemy::ENEMY_envoPilotMe;
 	envocronMeleePilot.sprite.name = "enemyEnvocronMe";
 
@@ -303,6 +303,15 @@ void PlayMode::updateAllEnemies() {
 			else if ((!iter->inMelee || (iter->inMelee && (iter->meleeTimer < iter->toPlayerTime || iter->meleeTimer > iter->toPlayerTime + iter->attackTime)))
 				&& projHitRes == Projectile::PROJ_SlowPlayer && iter->sprite.pipeline.hitTimer == 0) {
 				iter->health -= slowPlayerDam;
+				iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
+			}
+			else if ((!iter->inMelee || (iter->inMelee && (iter->meleeTimer < iter->toPlayerTime || iter->meleeTimer > iter->toPlayerTime + iter->attackTime)))
+				&& projHitRes == Projectile::PROJ_SlowPlayerReflect && iter->sprite.pipeline.hitTimer == 0) {
+				iter->health -= 2.5f*slowPlayerDam;
+				iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
+			}
+			else if (projHitRes == Projectile::PROJ_Melee && iter->sprite.pipeline.hitTimer == 0) {
+				iter->health -= meleePlayerDam;
 				iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
 			}
 			if (iter->health <= 0.f) {
@@ -583,6 +592,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			return true;
 		}
 		else if (evt.key.keysym.sym == SDLK_LSHIFT) {
+			melee.pressed = true;
 			return true;
 		}
 		else if (evt.key.keysym.sym == SDLK_LEFT) {
@@ -635,14 +645,15 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			leftfire.pressed = false;
 			return true;
 		}
-		else if (evt.key.keysym.sym == SDLK_LSHIFT) {
+		else if (evt.key.keysym.sym == SDLK_RSHIFT) {
 			if (SDL_GetRelativeMouseMode() == SDL_FALSE) {
 				SDL_SetRelativeMouseMode(SDL_TRUE);
 				return true;
 			}
 			return true;
 		}
-		else if (evt.key.keysym.sym == SDLK_RSHIFT) {
+		else if (evt.key.keysym.sym == SDLK_LSHIFT) {
+			melee.pressed = false;
 			return true;
 		}
 		else if (evt.key.keysym.sym == SDLK_LEFT) {
@@ -690,12 +701,23 @@ void PlayMode::createProjectileMech(int type, glm::vec3 motionVec, glm::vec3 pla
 	if (type == Projectile::PROJ_RapidPlayer) {
 		newProj.projSprite.pipeline.setAnimation(std::string("projectilePlayerRapid"));
 	}
-	else {
+	else if(type == Projectile::PROJ_SlowPlayer){
 		newProj.projSprite.pipeline.setAnimation("projectilePlayerSlow");
 	}
+	else {
+		newProj.projSprite.doDraw = false;
+	}
 	newProj.type = type;
-	newProj.projSprite.pos = playerPos + normalize(motionVec) * 0.01f;
-	newProj.motionVector = normalize(motionVec);
+	if (type == Projectile::PROJ_Melee) {
+		newProj.projSprite.pos = playerPos;
+		newProj.motionVector = motionVec;
+		newProj.projSprite.name = "projectileMelee";
+		mech.reflect = projectiles.end();
+	}
+	else {
+		newProj.projSprite.pos = playerPos + normalize(motionVec) * 0.01f;
+		newProj.motionVector = normalize(motionVec);
+	}
 	projectiles.push_back(newProj);
 }
 
@@ -713,6 +735,16 @@ void PlayMode::updateProjectiles(float elapsed) {
 			it->meleeTimer++;
 			if (it->meleeTimer > it->meleeTime) delIterators.push_back(it);
 		}
+		else if (it->type == it->PROJ_Melee) {
+			if (mech.meleeTimer == 0) delIterators.push_back(it);
+			else projectileHit(it->projSprite);
+		}
+		if (mech.meleeTimer != 0 && mech.reflect != projectiles.end()) {
+			mech.reflect->projSprite.pipeline.currentAnimation = "projectilePlayerSlow";
+			mech.reflect->type = Projectile::PROJ_SlowPlayerReflect;
+			mech.reflect->motionVector.y = -mech.reflect->motionVector.y;
+			mech.reflect = projectiles.end();
+		}
 	}
 	for (int itInd = 0; itInd < delIterators.size(); itInd++) {
 		projectiles.erase(delIterators[itInd]);
@@ -721,43 +753,53 @@ void PlayMode::updateProjectiles(float elapsed) {
 }
 
 inline bool vecComp(float spritePos, float projPos, float spriteWidth, float projWidth) {
-	return ((projPos <= spritePos + spriteWidth && projPos >= spritePos) || (projPos + projWidth <= spritePos + spriteWidth && projPos + projWidth >= spritePos))
-		|| ((spritePos <= projPos + projWidth && spritePos >= projPos) || (spritePos + spriteWidth <= projPos + projWidth && spritePos + spriteWidth >= projPos));
+	return abs(spritePos - projPos) <= spriteWidth || abs(spritePos - projPos) <= projWidth;
 };
 
 int PlayMode::projInter(Projectile& proj, Sprite hitSprite, float spriteHeight, float spriteWidth, glm::vec3 spritePos){
 
 	glm::vec3 projPos = scene.cameras.front().transform->make_world_to_local() * glm::vec4(proj.projSprite.pos, 1.f);
+	
+
 	float projWidth = proj.projSprite.width * proj.projSprite.size.x / SPRITE_SCALE / -projPos.z;
 	float projHeight = proj.projSprite.height * proj.projSprite.size.y / SPRITE_SCALE / -projPos.z;
-	if (abs(projPos.z - spritePos.z) < projZDelta) {
-		if (vecComp(spritePos.x, projPos.x, spriteWidth, projWidth) && vecComp(spritePos.y, projPos.y, spriteHeight, projHeight))
+	if (abs(projPos.z - spritePos.z) < projZDelta || (hitSprite.name == "projectileMelee" && abs( spritePos.z - projPos.z) < reflectZDelta && spritePos.z >= projPos.z)) {
+
+		if (vecComp(spritePos.x, projPos.x, spriteWidth, projWidth) && vecComp(spritePos.y, projPos.y, spriteHeight, projHeight)) {
 			return proj.type;
+		}
+		else if (hitSprite.name == "projectileMelee" && vecComp(spritePos.x, projPos.x, 2.f*spriteWidth, 2.f * projWidth) && vecComp(spritePos.y, projPos.y, 2.f * spriteHeight, 2.f * projHeight)) {
+			return proj.type;
+		}
 	}
 	return -1;
 };
 
 
 int PlayMode::projectileHit(Sprite hitSprite) {
-	
-	
 
 	
 	glm::vec3 spritePos = scene.cameras.front().transform->make_world_to_local() * glm::vec4(hitSprite.pos,1.f);
 	float spriteWidth = hitSprite.width * hitSprite.size.x / SPRITE_SCALE;
 	float spriteHeight = hitSprite.height * hitSprite.size.y / SPRITE_SCALE;
-	for (auto& proj : projectiles) {
-		//std::cout << "hit sprite is " << hitSprite.name.substr(0, 5) << " and proj is " << proj.type << std::endl;
-		if((proj.type == Projectile::PROJ_RapidPlayer || proj.type == Projectile::PROJ_SlowPlayer)
+	for (auto& projIt = projectiles.begin(); projIt != projectiles.end(); projIt++) {
+		Projectile& proj = *projIt;
+		if((proj.type == Projectile::PROJ_RapidPlayer || proj.type == Projectile::PROJ_SlowPlayer || proj.type == Projectile::PROJ_SlowPlayerReflect || proj.type == Projectile::PROJ_Melee)
 			&& ( hitSprite.name.size() > 5 && hitSprite.name.substr(0,5) == std::string("enemy"))) {
 			int temp = projInter(proj, hitSprite, spriteHeight, spriteWidth, spritePos);
-			//std::cout << temp << " at enemy\n";
 			if (temp >= 0) return temp;
 		}
-		else if((proj.type == Projectile::PROJ_RapidEnemy || proj.type == 
+		else if ((proj.type == Projectile::PROJ_RapidEnemy || proj.type ==
 			Projectile::PROJ_SlowEnemy || proj.type == Projectile::PROJ_MeleeEnemy) && (hitSprite.name == "player")) {
 			int temp = projInter(proj, hitSprite, spriteHeight, spriteWidth, spritePos);
 			if (temp >= 0) return temp;
+		}
+		else if (( proj.type == Projectile::PROJ_SlowEnemy) && (hitSprite.name == "projectileMelee")) {
+			int temp = projInter(proj, hitSprite, spriteHeight, spriteWidth, spritePos);
+			if (temp >= 0) {
+				mech.reflect = projIt;
+				return temp;
+			}
 		}
 	}
 	return -1;
@@ -967,8 +1009,6 @@ void PlayMode::update(float elapsed) {
 			bg_loop->set_position(get_player_position(),bg_loop->pan.ramp);
 		}*/
 
-		//Update level to get new position offset
-
 
 		//Update transition machine
 		horiMovement.updateStateMachine();
@@ -987,12 +1027,6 @@ void PlayMode::update(float elapsed) {
 		else {
 			horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_horiSteady);
 		}
-		//if (arrowleft.pressed && !arrowright.pressed) {
-		//	reticleMotionVec.x -= updateDistReticle;
-		//}
-		//else if (!arrowleft.pressed && arrowright.pressed) {
-		//	reticleMotionVec.x += updateDistReticle;
-		//}
 		//Vertical
 		if (down.pressed && !up.pressed) {
 			vertMovement.transitionMachine(vertMovement.currentState, StateMachine::STATE_down);
@@ -1121,13 +1155,20 @@ void PlayMode::update(float elapsed) {
 		if (leftFiredCooldown > 0) leftFiredCooldown--;
 		if (rightFiredCooldown > 0) rightFiredCooldown--;
 
-		//Projectiles
-		if (leftFiredCooldown == 0 && leftfire.pressed) {
+		//Projectiles and melee
+			//Melee:
+		if (mech.meleeTimer > 0) mech.meleeTimer--;
+		else if (melee.pressed && mech.meleeTimer == 0) {
+			mech.meleeTimer = mech.meleeTime;
+			createProjectileMech(Projectile::PROJ_Melee, glm::vec3(0.f), mech.playerSprite->pos );
+		}
+			//Projectiles:
+		if (leftFiredCooldown == 0 && leftfire.pressed && mech.meleeTimer == 0) {
 			glm::vec3 playerProjMotion = glm::normalize(newTransform.rotation * glm::vec3(motionVec.x, motionVec.y + 5.f, motionVec.z));
 			createProjectileMech(Projectile::PROJ_RapidPlayer, playerProjMotion, mech.reticle->pos);
 			leftFiredCooldown = rapidFiredCooldown;
 		}
-		else if (rightFiredCooldown == 0 && rightfire.pressed) {
+		if (rightFiredCooldown == 0 && rightfire.pressed) {
 			glm::vec3 controlProjMotion = glm::normalize(camera->transform->make_local_to_world() * glm::vec4(reticleCamPos + newTransform.rotation *
 				glm::vec3(mech.reticle->size.x * mech.reticle->width / SPRITE_SCALE / 2.f / (playerCamDepth + 10.f), mech.reticle->size.y * mech.reticle->height / SPRITE_SCALE / 2.f / (playerCamDepth + 10.f), 0.f), 1.f) - mech.playerSprite->pos);
 			createProjectileMech(Projectile::PROJ_SlowPlayer, controlProjMotion, mech.playerSprite->pos);

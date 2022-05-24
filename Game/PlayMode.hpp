@@ -42,7 +42,7 @@ struct PlayMode : Mode {
 	struct Button {
 		uint8_t downs = 0;
 		uint8_t pressed = 0;
-	} left, right, down, up, space,in,out, arrowleft,arrowright,arrowup,arrowdown, rightfire, leftfire;
+	} left, right, down, up, space,in,out, arrowleft,arrowright,arrowup,arrowdown, rightfire, leftfire, melee;
 
 	//local copy of the game scene (so code can change it during gameplay):
 	Scene scene;
@@ -73,7 +73,7 @@ struct PlayMode : Mode {
 			int type = PROJ_SlowPlayer;
 			//Bombs are "mines", so dont explode unless impacted
 
-			enum { PROJ_Melee, PROJ_MeleeEnemy, PROJ_SlowPlayer, PROJ_RapidPlayer, PROJ_SlowEnemy, PROJ_RapidEnemy, PROJ_Missile, PROJ_Bomb };
+			enum { PROJ_Melee, PROJ_MeleeEnemy, PROJ_SlowPlayer, PROJ_SlowPlayerReflect, PROJ_RapidPlayer, PROJ_SlowEnemy, PROJ_RapidEnemy, PROJ_Missile, PROJ_Bomb };
 		};
 		float projCutoff = 100.f; 
 		int projInter(Projectile& proj, Sprite hitSprite, float spriteHeight, float spriteWidth, glm::vec3 spritePos);
@@ -81,6 +81,7 @@ struct PlayMode : Mode {
 		//Proj damage
 		float rapidPlayerDam = 1.5f;
 		float slowPlayerDam = 8.f;
+		float meleePlayerDam = 15.f;
 
 		Projectile genericProjectile1;
 		std::list<Projectile> projectiles;
@@ -91,7 +92,7 @@ struct PlayMode : Mode {
 		int rightFiredCooldown = slowFiredCooldown;
 		int fireCooldown = 30;
 		float projZDelta =1.5f;
-
+		float reflectZDelta = 1.5f;
 
 		//Enemies
 		struct Enemy {
@@ -195,6 +196,11 @@ struct PlayMode : Mode {
 		float health = 200.f;
 		int meleeHitInvince = 45;
 		int meleeHitInvinceTimer = 0;
+
+		int meleeTime = 30;
+		int meleeTimer = 0;
+
+		std::list<Projectile>::iterator reflect;
 	} mech; 
 
 
