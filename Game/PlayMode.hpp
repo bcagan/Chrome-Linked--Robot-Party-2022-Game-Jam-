@@ -81,7 +81,7 @@ struct PlayMode : Mode {
 		//Proj damage
 		float rapidPlayerDam = 1.5f;
 		float slowPlayerDam = 8.f;
-		float meleePlayerDam = 15.f;
+		float meleePlayerDam = 30.f;
 
 		Projectile genericProjectile1;
 		std::list<Projectile> projectiles;
@@ -169,6 +169,9 @@ struct PlayMode : Mode {
 		Enemy bossJebb;
 		Enemy bossGil;
 		Enemy bossDark;
+
+		bool bossJebbDefeated = false;
+		bool bossJebbSpawned = false;
 
 	//Meshes:
 	bool bboxIntersect(BBoxStruct object, BBoxStruct stationary); //Intersect bboxes and return true if collision

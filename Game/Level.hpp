@@ -29,7 +29,7 @@ public:
 		float spawnDist = 0.f;
 	};
 
-	bool winCheck() {
+	bool bossCheck() {
 		if (segment == path.size() - 1) return true;
 		else return false;
 	}

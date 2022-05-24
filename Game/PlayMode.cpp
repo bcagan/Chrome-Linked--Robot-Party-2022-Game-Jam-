@@ -120,6 +120,16 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		projectile.addAnimation("/Sources/Animations/ANIMATE_projectileDark.txt");
 		scene.spriteLib["projectile1"] = projectile;
 
+		Sprite bossSprite;
+		bossSprite.pipeline = lit_color_texture_program_sprite_pipeline;
+		bossSprite.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
+		bossSprite.addAnimation("/Sources/Animations/ANIMATE_BossPlaceholder.txt");
+		bossSprite.pipeline.setAnimation("BossPlaceholder");
+		bossSprite.pipeline.defaultAnimation = (*reticle.pipeline.animations)["BossPlaceholder"];
+		bossSprite.width = 128; bossSprite.height = 256;
+		bossSprite.size = glm::vec2(1.f);
+		scene.spriteLib["boss"] = bossSprite;
+
 	}
 
 	glm::vec3 initPos = glm::vec3(0.f);
@@ -216,7 +226,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	Enemy bossDark;*/
 
 	//Define enemies
-	grazaloidJet.health = 10.f;
+	grazaloidJet.health = 15.f;
 	grazaloidJet.shotCooldown = 10;
 	grazaloidJet.projType = Projectile::PROJ_RapidEnemy;
 	//TEMP SPRITE:
@@ -233,15 +243,23 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	grazaloidJet.path.push_back(std::make_pair(30, glm::vec2(-xOffsetGraz, 0.f)));
 	grazaloidJet.shotOffset = glm::vec2(0.f);
 
+	//Hit box offset by 0.1 sprite size on either side to make projectile aiming more forgiving
+	grazaloidJet.sprite.hitBoxOff = glm::vec2(-0.1 * grazaloidJet.sprite.width * grazaloidJet.sprite.size.x / SPRITE_SCALE, -0.1 * grazaloidJet.sprite.width * grazaloidJet.sprite.size.y / SPRITE_SCALE);
+	grazaloidJet.sprite.hitBoxSize = glm::vec2(1.2f);
+
 	//Both envocron pilots
 	envocronMeleePilot.path = std::vector<std::pair<int, glm::vec2>>();
 	envocronMeleePilot.path.push_back(std::make_pair(1, glm::vec2(0.0f)));
 	envocronMeleePilot.sprite = scene.spriteLib["test"];
+	envocronMeleePilot.sprite.hitBoxOff = glm::vec2(-0.1 * envocronMeleePilot.sprite.width * envocronMeleePilot.sprite.size.x / SPRITE_SCALE, -0.1 * envocronMeleePilot.sprite.width * envocronMeleePilot.sprite.size.y / SPRITE_SCALE);
+
+	//Hit box offset by 0.1 sprite size on either side 
+	envocronMeleePilot.sprite.hitBoxSize = glm::vec2(1.2f);
 	envocronMeleePilot.shotOffset = glm::vec2(0.f);
 	//For both, enemy cooldown is despawn timer
 
 	//Ranged only
-	envocronRangedPilot.health = 3.f * grazaloidJet.health;
+	envocronRangedPilot.health = 4.f * grazaloidJet.health;
 	envocronRangedPilot = envocronMeleePilot;
 	envocronRangedPilot.shotCooldown = 40;
 	envocronRangedPilot.enemyCooldown = 1200;
@@ -250,8 +268,8 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	envocronRangedPilot.sprite.name = "enemyEnvocronRa";
 
 	//Melee only
-	envocronMeleePilot.health = 6.f * envocronRangedPilot.health;
-	envocronMeleePilot.shotCooldown = 300;
+	envocronMeleePilot.health = 10.f * grazaloidJet.health;
+	envocronMeleePilot.shotCooldown = 200;
 	envocronMeleePilot.enemyCooldown = 3000;
 	envocronMeleePilot.toPlayerTime = 20;
 	envocronMeleePilot.attackTime = ENEMY_MELEE_TIME;
@@ -259,6 +277,30 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	envocronMeleePilot.projType = Projectile::PROJ_MeleeEnemy;
 	envocronMeleePilot.type = Enemy::ENEMY_envoPilotMe;
 	envocronMeleePilot.sprite.name = "enemyEnvocronMe";
+
+
+
+	//Bosses
+
+	bossJebb.health = 900.f;
+	bossJebb.shotCooldown = 10;
+	bossJebb.enemyCooldown = 600;
+	bossJebb.projType = Projectile::PROJ_RapidEnemy;
+	//TEMP SPRITE:
+	bossJebb.sprite = scene.spriteLib["boss"];
+	bossJebb.sprite.name = "enemyJebb";
+	bossJebb.type = Enemy::BOSS_Jebb;
+	bossJebb.path = std::vector<std::pair<int, glm::vec2>>();
+	bossJebb.path.push_back(std::make_pair(30, glm::vec2(0.f)));
+	bossJebb.path.push_back(std::make_pair(30, glm::vec2(0.f)));
+	float xOffsetJebb = 7.5f;
+	bossJebb.path.push_back(std::make_pair(30, glm::vec2(xOffsetJebb, 0.f)));
+	bossJebb.path.push_back(std::make_pair(30, glm::vec2(xOffsetJebb, 0.f)));
+	bossJebb.path.push_back(std::make_pair(40, glm::vec2(xOffsetJebb, xOffsetJebb / 2.f)));
+	bossJebb.path.push_back(std::make_pair(30, glm::vec2(-xOffsetJebb, xOffsetJebb / 2.f)));
+	bossJebb.path.push_back(std::make_pair(30, glm::vec2(-xOffsetJebb, 0.f)));
+	bossJebb.path.push_back(std::make_pair(30, glm::vec2(-xOffsetJebb, 0.f)));
+	bossJebb.shotOffset = glm::vec2(0.f);
 
 	
 	//All other information defined in updateAllEnemies
@@ -285,6 +327,7 @@ void PlayMode::updateAllEnemies() {
 
 		if (iter->alive == false)
 			if (iter->framesToDeath <= 0) {
+				if (iter->type == iter->BOSS_Jebb) bossJebbDefeated = true;
 				toDespawn.push_back(iter);
 			}
 			else {
@@ -295,7 +338,7 @@ void PlayMode::updateAllEnemies() {
 			if (iter->sprite.pipeline.hitTimer > 0) iter->sprite.pipeline.hitTimer--;
 			//Health drop
 			int projHitRes = projectileHit(iter->sprite);
-			if ((!iter->inMelee || (iter->inMelee && ((iter->meleeTimer > iter->toPlayerTime + iter->attackTime))))
+			if ((!iter->inMelee || (iter->inMelee && ((iter->meleeTimer > iter->toPlayerTime + iter->attackTime)))) //Melee enemy has invulnerability to proj unless returning 
 				&& projHitRes == Projectile::PROJ_RapidPlayer && iter->sprite.pipeline.hitTimer < 18 ) {
 				iter->health -= rapidPlayerDam;
 				iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
@@ -307,16 +350,16 @@ void PlayMode::updateAllEnemies() {
 			}
 			else if ((!iter->inMelee || (iter->inMelee && (iter->meleeTimer < iter->toPlayerTime || iter->meleeTimer > iter->toPlayerTime + iter->attackTime)))
 				&& projHitRes == Projectile::PROJ_SlowPlayerReflect && iter->sprite.pipeline.hitTimer == 0) {
-				iter->health -= 2.5f*slowPlayerDam;
+				iter->health -= 2.f*slowPlayerDam;
 				iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
 			}
-			else if (projHitRes == Projectile::PROJ_Melee && iter->sprite.pipeline.hitTimer == 0) {
+			else if (projHitRes == Projectile::PROJ_Melee && iter->sprite.pipeline.hitTimer == 0) { //Melee enemy can be hit by melee attacks always
 				iter->health -= meleePlayerDam;
 				iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
 			}
 			if (iter->health <= 0.f) {
 				iter->alive = false;
-				iter->sprite.pipeline.setAnimation("slowTest"); //Temp to add defeat animation
+				if(iter->type != iter->BOSS_Jebb) iter->sprite.pipeline.setAnimation("slowTest"); //Temp to add defeat animation
 			}
 			else {//AI
 				//Movement:
@@ -332,6 +375,7 @@ void PlayMode::updateAllEnemies() {
 					nextSegment = iter->segment + 1;
 					if (nextSegment >= iter->path.size()) nextSegment = 0;
 				}
+				//Interpolate between segment starting positions based on percentage of current segement traveled
 				float offset = (float)iter->framesInSegment / (float)iter->path[iter->segment].first;
 				glm::vec2 posOffset = glm::vec2(offset) * iter->path[iter->segment].second + glm::vec2(1.f - offset) * iter->path[nextSegment].second;
 				glm::vec4 cameraPosModified = glm::vec4(camera->transform->make_world_to_local() * glm::vec4(iter->initPos, 1.f) + glm::vec3(posOffset, 0.f), 1.f);
@@ -343,7 +387,7 @@ void PlayMode::updateAllEnemies() {
 				{
 				case(Enemy::ENEMY_grazaJet):
 					iter->shotTimer++;
-					if (iter->shotTimer == iter->shotCooldown) {
+					if (iter->shotTimer == iter->shotCooldown) { //Create rapid projectile in direction of movement
 						Projectile newProj = genericProjectile1;
 						newProj.projSprite.pipeline.setAnimation("projectileEnRapid");
 						newProj.type = Projectile::PROJ_RapidEnemy;
@@ -365,9 +409,9 @@ void PlayMode::updateAllEnemies() {
 							iter->posDodge = false;
 						}
 					}
-					if(iter->inDodge && iter->dodgeTime < iter->dodgeCount){
+					if(iter->inDodge && iter->dodgeTime < iter->dodgeCount){ //If projected x position of player and enemy "collide" (within a range )
 						glm::vec3 difVec = glm::vec3(0.f);
-						if (iter->posDodge) {
+						if (iter->posDodge) { //Move towards the center of the screen on the x axis by 5%
 							cameraPos.x -= tan(camera->fovy) * camera->aspect * 0.1f * abs(cameraPos.z) / (float)iter->dodgeCount;
 							difVec.x -= tan(camera->fovy) * camera->aspect * 0.1f * abs(cameraPos.z) / (float)iter->dodgeCount;
 						}
@@ -377,7 +421,7 @@ void PlayMode::updateAllEnemies() {
 						iter->dodgeTime++;
 						iter->initPos += camera->transform->rotation * difVec;
 					}
-					else if (iter->dodgeTime >= iter->dodgeCount) {
+					else if (iter->dodgeTime >= iter->dodgeCount) { //Reset doge variables
 						iter->dodgeTime = 0;
 						iter->inDodge = false;
 					}
@@ -388,7 +432,7 @@ void PlayMode::updateAllEnemies() {
 					}
 					iter->enemyTimer++;
 
-					if (iter->enemyTimer > iter->enemyCooldown) {
+					if (iter->enemyTimer > iter->enemyCooldown) { //Enemy will exit stage after cooldown # of frames
 						if (iter->enemyTimer > iter->enemyCooldown + 30) {
 							toDespawn.push_back(iter);
 						}
@@ -396,16 +440,22 @@ void PlayMode::updateAllEnemies() {
 							iter->initPos += glm::vec3(0.f, 0.f, 0.1f);
 						}
 					}
-					else if(iter->shotTimer > iter->shotCooldown){
-						if (iter->meleeTimer == 0) {
+					else if (projHitRes == Projectile::PROJ_Melee && iter->shotTimer > iter->shotCooldown && mech.meleeTimer > 0 && iter->meleeTimer < iter->toPlayerTime + iter->attackTime) { //Any melee attack
+						if(iter->meleeTimer == 0) iter->startPos = iter->sprite.pos; //From the player should cancel a melee enemy
+						iter->meleeTimer = iter->toPlayerTime + iter->attackTime;
+						iter->inMelee = true;
+						iter->attackPos = iter->sprite.pos;
+					}
+					else if(iter->shotTimer > iter->shotCooldown){ //If the melee enemy is actively attacking
+						if (iter->meleeTimer == 0) { //Initialize attack
 							iter->startPos = iter->sprite.pos;
 							iter->inMelee = true;
 							iter->targetPos = mech.playerSprite->pos + glm::vec3(0.f, 0.5f, 0.0f);
 						}
-						if (iter->meleeTimer < iter->toPlayerTime) {
+						if (iter->meleeTimer < iter->toPlayerTime) { //First phase. Move towards players init position
 							iter->sprite.pos = (iter->targetPos - iter->startPos) * ((float)iter->meleeTimer / iter->toPlayerTime) + iter->startPos;
 						}
-						else if (iter->meleeTimer == iter->toPlayerTime) {
+						else if (iter->meleeTimer == iter->toPlayerTime) { //Once the player is reached, set up attack pos and create attack proj
 							iter->attackPos = iter->sprite.pos;
 							Projectile newProj = genericProjectile1;
 							newProj.type = Projectile::PROJ_MeleeEnemy;
@@ -415,16 +465,16 @@ void PlayMode::updateAllEnemies() {
 							newProj.meleeTimer = 0;
 							projectiles.push_back(newProj);
 						}
-						else if (iter->meleeTimer < iter->toPlayerTime + iter->attackTime) {
+						else if (iter->meleeTimer < iter->toPlayerTime + iter->attackTime) { 
 							iter->sprite.pos = iter->attackPos;
 						}
-						else {
+						else { //Once attack finishes, return to initial positon
 							float soFar = (float)(iter->meleeTimer - iter->toPlayerTime - iter->attackTime);
 							float percentageTraveled = soFar / (float)(iter->returnTime);
 							iter->sprite.pos = (iter->startPos - iter->attackPos) * percentageTraveled + iter->attackPos;
 						}
 						iter->meleeTimer++;
-						if (iter->meleeTimer == iter->returnTime + iter->toPlayerTime + iter->attackTime) {
+						if (iter->meleeTimer == iter->returnTime + iter->toPlayerTime + iter->attackTime) { //Reset variables at end of attack
 							iter->shotTimer = 0;
 							iter->meleeTimer = 0;
 							iter->inMelee = false;
@@ -433,7 +483,7 @@ void PlayMode::updateAllEnemies() {
 					break;
 				case(Enemy::ENEMY_EnvoPilotRa):
 					iter->enemyTimer++;
-					if (iter->enemyTimer > iter->enemyCooldown) {
+					if (iter->enemyTimer > iter->enemyCooldown) { //Enemy will exit stage after cooldown # of frames
 						if (iter->enemyTimer > iter->enemyCooldown + 30) {
 							toDespawn.push_back(iter);
 						}
@@ -443,7 +493,7 @@ void PlayMode::updateAllEnemies() {
 					}
 					else {
 						iter->shotTimer++;
-						if (iter->shotTimer == iter->shotCooldown) {
+						if (iter->shotTimer == iter->shotCooldown) { //Create slow projectile that targets player
 							Projectile newProj = genericProjectile1;
 							newProj.type = Projectile::PROJ_SlowEnemy;
 							newProj.projSprite.pos = iter->sprite.pos;
@@ -452,6 +502,48 @@ void PlayMode::updateAllEnemies() {
 							iter->shotTimer = 0;
 						}
 
+					}
+					break;
+				case(Enemy::BOSS_Jebb):
+					iter->shotTimer++;
+					iter->enemyTimer++;
+					if (iter->shotTimer == iter->shotCooldown) { //Create 2 rapid projectiles in direction of player
+						Projectile newProj = genericProjectile1;
+						newProj.projSprite.pipeline.setAnimation("projectileEnRapid");
+						newProj.type = Projectile::PROJ_RapidEnemy;
+						newProj.projSprite.pos = iter->sprite.pos;
+						newProj.motionVector = normalize(enemProjSpeed * normalize(mech.playerSprite->pos + glm::vec3(0.4f) - iter->sprite.pos));
+						projectiles.push_back(newProj);
+						newProj.projSprite.pos = iter->sprite.pos + camera->transform->rotation * glm::vec3(iter->sprite.width * iter->sprite.size.x / SPRITE_SCALE, 0.f, 0.f);
+						newProj.motionVector = normalize(enemProjSpeed * normalize(mech.playerSprite->pos + glm::vec3(0.4f) - newProj.projSprite.pos));
+						projectiles.push_back(newProj);
+						iter->shotTimer = 0;
+					}
+					if (iter->enemyTimer == iter->enemyCooldown) { //randomly create satillite enemy
+						iter->enemyTimer = 0;
+						float randomEnemy = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+						if (randomEnemy < 0.3f) {
+							Enemy newEnemy = grazaloidJet;
+							newEnemy.initPos = mech.playerSprite->pos + camera->transform->rotation * glm::vec3(-2.f, 0.f, -20.f);
+							newEnemy.segment = 0;
+							newEnemy.framesInSegment = newEnemy.path[0].first;
+							enemies.push_back(newEnemy);
+						}
+						else if (randomEnemy < 0.6f) {
+							Enemy newEnemy = envocronMeleePilot;
+							newEnemy.initPos = mech.playerSprite->pos + camera->transform->rotation * glm::vec3(2.f, 0.f, -20.f);
+							newEnemy.segment = 0;
+							newEnemy.framesInSegment = newEnemy.path[0].first;
+							enemies.push_back(newEnemy);
+
+						}
+						else{
+							Enemy newEnemy = envocronRangedPilot;
+							newEnemy.initPos = mech.playerSprite->pos + camera->transform->rotation * glm::vec3(2.f, 1.f, -20.f);
+							newEnemy.segment = 0;
+							newEnemy.framesInSegment = newEnemy.path[0].first;
+							enemies.push_back(newEnemy);
+						}
 					}
 					break;
 				default:
@@ -466,7 +558,7 @@ void PlayMode::updateAllEnemies() {
 	}
 }
 
-void PlayMode::addEnemyCheck(int ID, glm::vec3 worldPos, float spawnDist) {
+void PlayMode::addEnemyCheck(int ID, glm::vec3 worldPos, float spawnDist) { //Adds enemy to generic toSpawn list
 	bool isEmpty = false;
 	if (toSpawn.size() == 0) isEmpty = true;
 	EnemySpawn newSpawn;
@@ -476,7 +568,8 @@ void PlayMode::addEnemyCheck(int ID, glm::vec3 worldPos, float spawnDist) {
 	toSpawn.push_back(newSpawn);
 	if (isEmpty) curSpawnCheck = toSpawn.begin();
 }
-void PlayMode::spawnEnemies() {
+
+void PlayMode::spawnEnemies() { //Spawn all enemies that are within spawnDist distance from player at current frame
 	bool stillSpawn = true;
 	while (stillSpawn && curSpawnCheck != toSpawn.end()) {
 		EnemySpawn curCheck = *curSpawnCheck;
@@ -514,6 +607,14 @@ void PlayMode::spawnEnemies() {
 			}
 		}
 		else stillSpawn = false;
+	}
+	if (level.bossCheck() && !bossJebbSpawned) {
+		bossJebbSpawned = true;
+		Enemy newEnemy = bossJebb;
+		newEnemy.initPos = mech.playerSprite->pos + camera->transform->rotation*glm::vec3(-bossJebb.sprite.width* bossJebb.sprite.size.x/2.f/SPRITE_SCALE, -bossJebb.sprite.height * bossJebb.sprite.size.y / 2.f / SPRITE_SCALE,-50.f);
+		newEnemy.segment = 0;
+		newEnemy.framesInSegment = newEnemy.path[0].first;
+		enemies.push_back(newEnemy);
 	}
 }
 
@@ -592,7 +693,6 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			return true;
 		}
 		else if (evt.key.keysym.sym == SDLK_LSHIFT) {
-			melee.pressed = true;
 			return true;
 		}
 		else if (evt.key.keysym.sym == SDLK_LEFT) {
@@ -653,7 +753,6 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			return true;
 		}
 		else if (evt.key.keysym.sym == SDLK_LSHIFT) {
-			melee.pressed = false;
 			return true;
 		}
 		else if (evt.key.keysym.sym == SDLK_LEFT) {
@@ -674,12 +773,14 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		}
 	}
 	else if (evt.type == SDL_MOUSEBUTTONDOWN) {
-		rightfire.pressed = true;
+		if (evt.button.button == SDL_BUTTON_LEFT) rightfire.pressed = true;
+		else if (evt.button.button == SDL_BUTTON_RIGHT) melee.pressed = true;
 		return true;
 	}
 	else if (evt.type == SDL_MOUSEBUTTONUP) {
-		rightfire.pressed = false;
-		return false;
+		if (evt.button.button == SDL_BUTTON_LEFT) rightfire.pressed = false;
+		else if (evt.button.button == SDL_BUTTON_RIGHT) melee.pressed = false;
+		return true;
 	}
 	else if (evt.type == SDL_MOUSEMOTION)
 	{
@@ -757,12 +858,12 @@ inline bool vecComp(float spritePos, float projPos, float spriteWidth, float pro
 };
 
 int PlayMode::projInter(Projectile& proj, Sprite hitSprite, float spriteHeight, float spriteWidth, glm::vec3 spritePos){
-
-	glm::vec3 projPos = scene.cameras.front().transform->make_world_to_local() * glm::vec4(proj.projSprite.pos, 1.f);
+	
+	glm::vec3 projPos = scene.cameras.front().transform->make_world_to_local() * glm::vec4(proj.projSprite.pos, 1.f) + glm::vec3(proj.projSprite.hitBoxOff,0.f);
 	
 
-	float projWidth = proj.projSprite.width * proj.projSprite.size.x / SPRITE_SCALE / -projPos.z;
-	float projHeight = proj.projSprite.height * proj.projSprite.size.y / SPRITE_SCALE / -projPos.z;
+	float projWidth = proj.projSprite.width * proj.projSprite.size.x / SPRITE_SCALE / -projPos.z * proj.projSprite.hitBoxOff.x;
+	float projHeight = proj.projSprite.height * proj.projSprite.size.y / SPRITE_SCALE / -projPos.z * proj.projSprite.hitBoxOff.y;
 	if (abs(projPos.z - spritePos.z) < projZDelta || (hitSprite.name == "projectileMelee" && abs( spritePos.z - projPos.z) < reflectZDelta && spritePos.z >= projPos.z)) {
 
 		if (vecComp(spritePos.x, projPos.x, spriteWidth, projWidth) && vecComp(spritePos.y, projPos.y, spriteHeight, projHeight)) {
@@ -779,9 +880,9 @@ int PlayMode::projInter(Projectile& proj, Sprite hitSprite, float spriteHeight, 
 int PlayMode::projectileHit(Sprite hitSprite) {
 
 	
-	glm::vec3 spritePos = scene.cameras.front().transform->make_world_to_local() * glm::vec4(hitSprite.pos,1.f);
-	float spriteWidth = hitSprite.width * hitSprite.size.x / SPRITE_SCALE;
-	float spriteHeight = hitSprite.height * hitSprite.size.y / SPRITE_SCALE;
+	glm::vec3 spritePos = scene.cameras.front().transform->make_world_to_local() * glm::vec4(hitSprite.pos,1.f) + glm::vec3(hitSprite.hitBoxOff, 0.f);
+	float spriteWidth = hitSprite.width * hitSprite.size.x / SPRITE_SCALE * hitSprite.hitBoxSize.x;
+	float spriteHeight = hitSprite.height * hitSprite.size.y / SPRITE_SCALE * hitSprite.hitBoxSize.y;
 	for (auto& projIt = projectiles.begin(); projIt != projectiles.end(); projIt++) {
 		Projectile& proj = *projIt;
 		if((proj.type == Projectile::PROJ_RapidPlayer || proj.type == Projectile::PROJ_SlowPlayer || proj.type == Projectile::PROJ_SlowPlayerReflect || proj.type == Projectile::PROJ_Melee)
@@ -995,8 +1096,8 @@ void PlayMode::update(float elapsed) {
 		cursorPos = glm::vec2((float)x / (float)screenW, (float)y / (float)screenH);
 
 		//Update level
-		level.update(elapsed);
-		offsetObjects();
+		if (!level.bossCheck())level.update(elapsed);
+		if(!level.bossCheck()) offsetObjects();
 
 		/*{ //update listener to camera position:
 			glm::mat4x3 frame = camera->transform->make_local_to_parent();
@@ -1217,7 +1318,7 @@ void PlayMode::update(float elapsed) {
 		right.downs = 0;
 		up.downs = 0;
 		down.downs = 0;
-		win = level.winCheck();
+		win = bossJebbDefeated;
 	}
 	else if (win) {
 		std::cout << "Win!\n";

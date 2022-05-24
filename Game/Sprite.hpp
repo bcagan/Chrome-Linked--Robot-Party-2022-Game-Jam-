@@ -98,6 +98,8 @@ public:
 	int width = 8;
 	int height = 8;
 	glm::vec2 size = glm::vec2(1.f); //Size modifier
+	glm::vec2 hitBoxOff = glm::vec2(0.f);
+	glm::vec2 hitBoxSize = glm::vec2(1.f);
 
 	bool doDraw = true;
 	struct Pipeline {
