@@ -39,6 +39,13 @@ struct LitColorTextureProgram {
 	GLuint viewDir_vec3 = -1U;
 
 
+
+	//text
+	GLuint TEXT_BOOL = -1U;
+	GLuint TEXT_BOOL2 = -1U;
+	GLuint TEXT_COLOR = -1U;
+
+
 	GLuint maxLights = 40U;
 	
 	//Textures:

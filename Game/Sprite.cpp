@@ -7,11 +7,11 @@
 
 void Sprite::addAnimation(std::string fileName, bool verbosity) {
 	std::ifstream fstream;
-	if(verbosity) std::cout << "starting load of " << fileName << std::endl;
+	if (verbosity)  std::cout << "starting load of " << fileName << std::endl;
 	std::string properPath = data_path(fileName);
 	fstream.open(properPath, std::ios::in | std::ios::binary);
 	if (fstream.is_open()) {
-		if (verbosity) 	std::cout << fileName << " opened succesfully\n";
+		if (verbosity)  	std::cout << fileName << " opened succesfully\n";
 		int nameSize;
 		std::string name;
 		int width, height;
@@ -40,7 +40,7 @@ void Sprite::addAnimation(std::string fileName, bool verbosity) {
 		animation.name = name;
 		animation.frameTime = frameLength;
 
-		if (verbosity) std::cout << "Meta data gained succesfully\n";
+		if (verbosity)  std::cout << "Meta data gained succesfully\n";
 
 		//Layers
 		for (int l = 0; l < numLayers; l++) { 
@@ -53,10 +53,11 @@ void Sprite::addAnimation(std::string fileName, bool verbosity) {
 			for (int t = 0; t < numFrames; t++) {
 				int texSize;
 				fstream.getline(intline, 32);
+				 std::cout << "Frame " << t << " layer " << l << " intline " << intline << std::endl;
 				texSize = std::stoi(std::string(intline));
 				char* data = (char*)malloc(sizeof(char)*texSize);
-				fstream.getline(data, 2*texSize);
-
+				fstream.read(data, texSize);
+				fstream.ignore(texSize, '\n');
 				//Create opengl texture
 				glGenTextures(1, &(animation.layers[l].textures[t].texture)); 
 				glBindTexture(GL_TEXTURE_2D, (animation.layers[l].textures[t].texture));
@@ -79,7 +80,7 @@ void Sprite::addAnimation(std::string fileName, bool verbosity) {
 				if (verbosity) 	std::cout << "layer " << l << " frame " << t << " texture created\n";
 			}
 		}
-		if (verbosity) std::cout << "All data in " <<name << " read\n";
+		if (verbosity)  std::cout << "All data in " <<name << " read\n";
 		fstream.close(); //Close file before continuing
 		pipeline.animations->insert_or_assign(name.c_str(), animation);
 		pipeline.numAnimations++; //returns true if new addition to library

@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <string>
 #include <fstream>
+#include <ostream>
 
 int main()
 {
@@ -33,13 +34,11 @@ int main()
     std::cout << "Pre data info: Name " << name << " (" << nameSize << ") " << w << "x" << h << " " << numLayers << " layers " << numFrames << " frames (" << numFPS << ")\n";
 
     //Create file
+
+    //REDO USING fstream.write!
     std::string outFileStr = std::string("../../AnimationOut/ANIMATE_").append(name).append(".txt");
-    FILE* outFile;
-    fopen_s(&outFile, outFileStr.c_str(), "w");
-    if (outFile == NULL) {
-        std::cout << ("ERROR: File openning failed\n");
-        assert(outFile);
-    }
+    std::ofstream fstream;
+    fstream.open(outFileStr, std::ios::out | std::ios::binary);
 
     std::cout << "Created output file " << outFileStr << std::endl;
 
@@ -48,31 +47,31 @@ int main()
     //Write this data
     //Name size
     std::string writeStr = std::to_string(nameSize);
-    fwrite(writeStr.c_str(), sizeof(char), writeStr.size(), outFile);
-    fwrite("\n", sizeof(char), 1, outFile);
+    fstream.write(writeStr.c_str(),writeStr.size());
+    fstream.write("\n", 1);
     //Name
-    fwrite(name.c_str(), sizeof(char), name.size(), outFile);
-    fwrite("\n", sizeof(char), 1, outFile);
+    fstream.write(name.c_str(), name.size() );
+    fstream.write("\n", 1 );
     //Width
     writeStr = std::to_string(w);
-    fwrite(writeStr.c_str(), sizeof(char), writeStr.size(), outFile);
-    fwrite("\n", sizeof(char), 1, outFile);
+    fstream.write(writeStr.c_str(), writeStr.size() );
+    fstream.write("\n", 1 );
     //Height
     writeStr = std::to_string(h);
-    fwrite(writeStr.c_str(), sizeof(char), writeStr.size(), outFile);
-    fwrite("\n", sizeof(char), 1, outFile);
+    fstream.write(writeStr.c_str(), writeStr.size() );
+    fstream.write("\n", 1 );
     //Num layers
     writeStr = std::to_string(numLayers);
-    fwrite(writeStr.c_str(), sizeof(char), writeStr.size(), outFile);
-    fwrite("\n", sizeof(char), 1, outFile);
+    fstream.write(writeStr.c_str(), writeStr.size() );
+    fstream.write("\n", 1 );
     //Num frames
     writeStr = std::to_string(numFrames);
-    fwrite(writeStr.c_str(), sizeof(char), writeStr.size(), outFile);
-    fwrite("\n", sizeof(char), 1, outFile);
+    fstream.write(writeStr.c_str(), writeStr.size() );
+    fstream.write("\n", 1 );
     //Frame time
     writeStr = std::to_string(numFPS);
-    fwrite(writeStr.c_str(), sizeof(char), writeStr.size(), outFile);
-    fwrite("\n", sizeof(char), 1, outFile);
+    fstream.write(writeStr.c_str(), writeStr.size() );
+    fstream.write("\n", 1 );
 
     for (int l = 0; l < numLayers; l++) {
         std::cout << "LAYER: " << l << std::endl;
@@ -82,8 +81,8 @@ int main()
         std::cout << "Material is " << mat << std::endl;
 
         writeStr = std::to_string(mat);
-        fwrite(writeStr.c_str(), sizeof(char), writeStr.size(), outFile);
-        fwrite("\n", sizeof(char), 1, outFile);
+        fstream.write(writeStr.c_str(), writeStr.size() );
+        fstream.write("\n", 1 );
         
         //Write this data
 
@@ -98,7 +97,7 @@ int main()
             unsigned char* data = stbi_load(file.c_str(), &width, &height, &nrChannels, 0);
             if (data == NULL) {
                 std::cout << "ERROR: Image load failed\n";
-                fclose(outFile);
+                fstream.close();
                 return 1;
             }
             assert(data);
@@ -106,12 +105,12 @@ int main()
             int sizeofTex = nrChannels * height * width;
             if (nrChannels < 4) {
                 std::cout << "ERROR: Data should be formatted with at least RGBA\n";
-                fclose(outFile);
+                fstream.close();
                 return 1;
             }
             if (w != width || h != height) {
                 std::cout << "ERROR: Width and height do not match.\n";
-                fclose(outFile);
+                fstream.close();
                 return 1;
             }
             assert(w == width && h == height);
@@ -120,17 +119,17 @@ int main()
             //Write texture size
 
             writeStr = std::to_string(sizeofTex);
-            fwrite(writeStr.c_str(), sizeof(char), writeStr.size(), outFile);
-            fwrite("\n", sizeof(char), 1, outFile);
+            fstream.write(writeStr.c_str(), writeStr.size() );
+            fstream.write("\n", 1);
 
             //Write texture
-            fwrite(data, sizeof(char), sizeofTex, outFile);
-            fwrite("\n", sizeof(char), 1, outFile);
+            fstream.write((const char*)data, sizeofTex);
+            fstream.write("\n", 1);
         }
 
     }
     std::cout << "Animation written\n";
-    fclose(outFile);
+    fstream.close();
     return 0;
 }
 

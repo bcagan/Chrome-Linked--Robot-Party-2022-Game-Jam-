@@ -15,6 +15,7 @@
 
 #include <random>
 #include <string>
+#include "Text.hpp"
 
 #define AVOID_RECOLLIDE_OFFSET 0.05f
 #define DEATH_LAYER -10.0f
@@ -64,6 +65,8 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		return newBBox;
 	};
 
+	text = Text();
+
 
 	//Enemies
 	toSpawn = std::list<EnemySpawn>();
@@ -84,7 +87,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	scene.spriteLib = std::unordered_map<std::string, Sprite>();
 
 	{//Create sprites (will be done in dedicated functions in final game)
-		Sprite test; //Will become player sprite
+		Sprite test; 
 		test.pipeline = lit_color_texture_program_sprite_pipeline;
 		test.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
 		test.addAnimation("/Sources/Animations/ANIMATE_fastTest.txt"); //Fast
@@ -125,13 +128,23 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		bossSprite.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
 		bossSprite.addAnimation("/Sources/Animations/ANIMATE_BossPlaceholder.txt");
 		bossSprite.pipeline.setAnimation("BossPlaceholder");
-		bossSprite.pipeline.defaultAnimation = (*reticle.pipeline.animations)["BossPlaceholder"];
+		bossSprite.pipeline.defaultAnimation = (*bossSprite.pipeline.animations)["BossPlaceholder"];
 		bossSprite.width = 128; bossSprite.height = 256;
 		bossSprite.size = glm::vec2(1.f);
 		scene.spriteLib["boss"] = bossSprite;
 
-	}
+		Sprite zivMech;
+		zivMech.pipeline = lit_color_texture_program_sprite_pipeline;
+		zivMech.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
+		zivMech.addAnimation("/Sources/Animations/ANIMATE_ZivMechFlying.txt");
+		zivMech.pipeline.setAnimation("ZivMechFlying");
+		zivMech.pipeline.defaultAnimation = (*zivMech.pipeline.animations)["ZivMechFlying"];
+		zivMech.width = 128; zivMech.height = 128;
+		zivMech.size = glm::vec2(1.f);
+		scene.spriteLib["zivMech"] = zivMech;
 
+	}
+	
 	glm::vec3 initPos = glm::vec3(0.f);
 
 	for (auto& transform : scene.transforms) {
@@ -151,9 +164,10 @@ PlayMode::PlayMode() : scene(*test_scene) {
 			std::string spriteType = transformStr.substr(7, numIndicator - 7); //Get type of sprite and get generic version from library
 			Sprite newSprite = scene.spriteLib[spriteType];
 
-			if (spriteType == "test") {
+			if (spriteType == "zivMech") {
 				newSprite.pos = pos; //Create instance of spriteType at pos, and put in sprite list to be drawn/manipulated
-				initPos = pos;
+				initPos = pos ;
+				newSprite.size = glm::vec2(0.4f);
 				newSprite.name = "player";
 				scene.sprites.push_back(newSprite);
 			}
@@ -1247,8 +1261,8 @@ void PlayMode::update(float elapsed) {
 		glm::vec3 offsetReticleCamPos = glm::vec3(offsetReticleWidth, offsetReticleHeight, reticleCamPos.z);
 
 
-		if (playerCamHeight + mech.playerSprite->size.y * mech.playerSprite->height / SPRITE_SCALE < 0.85f * maxHeight) mech.reticle->pos = mech.playerSprite->pos + newTransform.rotation * glm::vec3((float)mech.playerSprite->width / SPRITE_SCALE / 4.f, 0.f, 0.5f);
-		else mech.reticle->pos = mech.playerSprite->pos + newTransform.rotation * glm::vec3((float)mech.playerSprite->width / SPRITE_SCALE / 4.f, 0.0001f, -0.25);
+		if (playerCamHeight + mech.playerSprite->size.y * mech.playerSprite->height / SPRITE_SCALE < 0.85f * maxHeight) mech.reticle->pos = mech.playerSprite->pos + newTransform.rotation * glm::vec3((float)mech.playerSprite->width / SPRITE_SCALE / 8.f, 0.f, 1.13f);
+		else mech.reticle->pos = mech.playerSprite->pos + newTransform.rotation * glm::vec3((float)mech.playerSprite->width / SPRITE_SCALE / 8.f, 0.001f, 0.0f);
 
 
 
@@ -1329,6 +1343,8 @@ void PlayMode::update(float elapsed) {
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
+
+	text.displayText(std::string("Hello!"), 0);
 
 
 	//Add any temp sprites to sprite list
@@ -1421,8 +1437,9 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	scene.draw(*camera);
 	GL_ERRORS();
-	scene.spriteDraw(*camera,true);
-	scene.spriteDraw(*camera,false);
+	scene.spriteDraw(*camera,true,false);
+	scene.spriteDraw(*camera, false,false);
+	scene.spriteDraw(*camera, false,true);
 	GL_ERRORS();
 
 	

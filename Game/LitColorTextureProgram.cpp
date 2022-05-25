@@ -35,6 +35,9 @@ Load< LitColorTextureProgram > lit_color_texture_program(LoadTagEarly, []() -> L
 	lit_color_texture_program_pipeline.LAYER_COUNT_uint = ret->LAYER_COUNT_uint;
 	lit_color_texture_program_pipeline.viewDir_vec3 = ret->viewDir_vec3;
 	lit_color_texture_program_pipeline.DO_LIGHT_bool = ret->DO_LIGHT_bool;
+	lit_color_texture_program_pipeline.TEXT_BOOL = ret->TEXT_BOOL;
+	lit_color_texture_program_pipeline.TEXT_BOOL2 = ret->TEXT_BOOL2;
+	lit_color_texture_program_pipeline.TEXT_COLOR = ret->TEXT_COLOR;
 	lit_color_texture_program_sprite_pipeline.LIGHT_COUNT_uint = ret->LIGHT_COUNT_uint;
 	lit_color_texture_program_sprite_pipeline.LIGHT_COUNT_float = ret->LIGHT_COUNT_float;
 	lit_color_texture_program_sprite_pipeline.LIGHT_TYPE_int_array = ret->LIGHT_TYPE_int_array;
@@ -47,6 +50,9 @@ Load< LitColorTextureProgram > lit_color_texture_program(LoadTagEarly, []() -> L
 	lit_color_texture_program_sprite_pipeline.LAYER_COUNT_uint = ret->LAYER_COUNT_uint;
 	lit_color_texture_program_sprite_pipeline.viewDir_vec3 = ret->viewDir_vec3;
 	lit_color_texture_program_sprite_pipeline.DO_LIGHT_bool = ret->DO_LIGHT_bool;
+	lit_color_texture_program_sprite_pipeline.TEXT_BOOL = ret->TEXT_BOOL;
+	lit_color_texture_program_sprite_pipeline.TEXT_BOOL2 = ret->TEXT_BOOL2;
+	lit_color_texture_program_sprite_pipeline.TEXT_COLOR = ret->TEXT_COLOR;
 
 
 	//make a 1-pixel white texture to bind by default:
@@ -109,10 +115,18 @@ LitColorTextureProgram::LitColorTextureProgram() {
 		"out vec3 normal;\n"
 		"out vec4 color;\n"
 		"out vec2 texCoord;\n"
+		"uniform uint TEXT_BOOL;\n"
 		"void main() {\n"
-		"	gl_Position = OBJECT_TO_CLIP * Position;\n"
-		"	position = OBJECT_TO_LIGHT * Position;\n"
-		"	normal = NORMAL_TO_LIGHT * Normal;\n"
+		"	if(TEXT_BOOL == 0u){\n"
+		"		gl_Position = OBJECT_TO_CLIP * Position;\n"
+		"		position = OBJECT_TO_LIGHT * Position;\n"
+		"		normal = NORMAL_TO_LIGHT * Normal;\n"
+		"	}\n"
+		"	else{\n"
+		"		gl_Position = Position;\n"
+		"		position =  vec3(Position.x,Position.y,Position.z);\n"
+		"		normal = Normal;\n"
+		"	}\n"
 		"	color = Color;\n"
 		"	texCoord = TexCoord;\n"
 		"}\n"
@@ -131,12 +145,19 @@ LitColorTextureProgram::LitColorTextureProgram() {
 		"uniform float LIGHT_CUTOFF[" + std::to_string(maxLights) + "];\n"
 		"uniform vec3 viewDir;\n"//ADDED
 		"uniform uint DO_LIGHT;\n"//ADDED
+		"uniform vec3 TEXT_COLOR;\n"
+		"uniform uint TEXT_BOOL2;\n"
 		"in vec3 position;\n"
 		"in vec3 normal;\n"
 		"in vec4 color;\n"
 		"in vec2 texCoord;\n"
 		"out vec4 fragColor;\n"
 		"void main() {\n"
+		"	if(TEXT_BOOL2 == 1u){\n"
+		"       vec4 inText = vec4(1.0,1.0,1.0, texture(TEX_ARR[0],texCoord).r);\n"
+		"       fragColor = vec4(TEXT_COLOR,1.0) * inText;\n"
+		"	}\n"
+		"	else{\n"
 		"	vec3 n = normalize(normal);\n"
 		"   vec3 total = vec3(0.0f);\n"
 		"	vec3 lightColor = vec3(0.0f);\n"
@@ -214,6 +235,7 @@ LitColorTextureProgram::LitColorTextureProgram() {
 		"	}\n"
 		"	else fragColor = albedo;\n"
 		"}\n"
+		"}\n"
 	);
 	//As you can see above, adjacent strings in C/C++ are concatenated.
 	// this is very useful for writing long shader programs inline.
@@ -242,6 +264,10 @@ LitColorTextureProgram::LitColorTextureProgram() {
 	TEX_ARR_sampler2D_array = glGetUniformLocation(program, "TEX_ARR");
 	LAYER_COUNT_uint = glGetUniformLocation(program, "LAYER_COUNT");
 	viewDir_vec3 = glGetUniformLocation(program, "viewDir");
+
+	TEXT_BOOL = glGetUniformLocation(program, "TEXT_BOOL");
+	TEXT_BOOL2 = glGetUniformLocation(program, "TEXT_BOOL2");
+	TEXT_COLOR = glGetUniformLocation(program, "TEXT_COLOR");
 
 
 

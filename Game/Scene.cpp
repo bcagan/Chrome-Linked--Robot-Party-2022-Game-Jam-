@@ -175,6 +175,17 @@ void Scene::draw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_lig
 			glUniform1ui(pipeline.DO_LIGHT_bool, (uint32_t)true);
 		}
 
+
+		//Not text
+		if (pipeline.TEXT_BOOL != -1U) {
+			glUniform1ui(pipeline.TEXT_BOOL, (uint32_t)false);
+		}
+		GL_ERRORS();
+		if (pipeline.TEXT_BOOL2 != -1U) {
+			glUniform1ui(pipeline.TEXT_BOOL2, (uint32_t)false);
+		}
+		GL_ERRORS();
+
 		//set any requested custom uniforms:
 		if (pipeline.set_uniforms) pipeline.set_uniforms();
 
@@ -221,14 +232,14 @@ void Scene::draw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_lig
 }
 
 
-void Scene::spriteDraw(Camera const& camera, bool proj) {
+void Scene::spriteDraw(Camera const& camera, bool proj, bool play) {
 	assert(camera.transform);
 	glm::mat4 world_to_clip = camera.make_projection() * glm::mat4(camera.transform->make_world_to_local());
 	glm::mat4x3 world_to_light = glm::mat4x3(1.0f);
-	spriteDraw(world_to_clip, world_to_light, proj);
+	spriteDraw(world_to_clip, world_to_light, proj, play);
 }
 
-void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light, bool proj) {
+void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light, bool proj, bool play) {
 
 
 	//Create sprite draw program
@@ -247,6 +258,8 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		//printf("Entered sprite draw\n");
 		if (sprite.name.substr(0, 10) == std::string("projectile") && !proj) continue;
 		if (sprite.name.substr(0, 10) != std::string("projectile") && proj) continue;
+		if (sprite.name.substr(0, 6) == std::string("player") && !play) continue;
+		if (sprite.name.substr(0, 6) != std::string("player") && play) continue;
 		if (!sprite.doDraw) continue;
 
 		//Reference to sprite's pipeline for convenience:
@@ -261,7 +274,8 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		glm::vec4 quadColor = glm::vec4(1.0f);
 		if (pipeline.hitTimer > 0) {
 			float percentage = (float)pipeline.hitTimer / (float)pipeline.hitTime;
-			quadColor = glm::vec4(1.0f, percentage * 0.5f + 0.5f, percentage * 0.5f + 0.5f, 1.0f);
+			if(!play) quadColor = glm::vec4(1.0f, percentage * 0.5f + 0.5f, percentage * 0.5f + 0.5f, 1.0f);
+			else quadColor = glm::vec4(percentage * 0.5f + 0.5f, 1.0f, percentage * 0.5f + 0.5f, 1.0f);
 		}
 
 		vertices[0].Position = glm::vec4(0.f, 0.f, height, 1.0f);
@@ -391,6 +405,15 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		}
 
 
+		//Not text
+		if (pipeline.TEXT_BOOL != -1U) {
+			glUniform1ui(pipeline.TEXT_BOOL, (uint32_t)false);
+		}
+		GL_ERRORS();
+		if (pipeline.TEXT_BOOL2 != -1U) {
+			glUniform1ui(pipeline.TEXT_BOOL2, (uint32_t)false);
+		}
+		GL_ERRORS();
 
 		std::vector<int> tempTexLocation;
 		tempTexLocation = std::vector<int>(layerCount);

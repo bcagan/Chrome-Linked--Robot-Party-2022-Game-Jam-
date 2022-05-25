@@ -131,6 +131,10 @@ public:
 		GLuint TEX_ARR_sampler2D_array = -1U;
 		GLuint LAYER_COUNT_uint = -1U;
 		GLuint viewDir_vec3 = -1U;
+		//text
+		GLuint TEXT_BOOL = -1U;
+		GLuint TEXT_BOOL2 = -1U;
+		GLuint TEXT_COLOR = -1U;
 
 		std::function< void() > set_uniforms; //(optional) function to set any other useful uniforms
 

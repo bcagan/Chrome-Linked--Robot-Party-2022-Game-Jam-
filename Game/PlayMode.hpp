@@ -1,3 +1,10 @@
+
+
+#ifndef PLAYMODE_H
+
+#define PLAYMODE_H
+
+#define ENEMY_MELEE_TIME 60
 #include "Mode.hpp"
 
 #include "Scene.hpp"
@@ -9,14 +16,8 @@
 #include <deque>
 #include "Sprite.hpp"
 #include "Level.hpp"
+#include "Text.hpp"
 #define PI_F 3.1415926f
-
-#ifndef PLAYMODE_H
-
-#define PLAYMODE_H
-
-#define ENEMY_MELEE_TIME 60
-
 
 
 //Global screen width and height
@@ -245,6 +246,10 @@ struct PlayMode : Mode {
 	StateMachine horiMovement;
 	StateMachine vertMovement;
 	void printMotionState();
+
+	//GUI
+	Text text;
+
 };
 
 

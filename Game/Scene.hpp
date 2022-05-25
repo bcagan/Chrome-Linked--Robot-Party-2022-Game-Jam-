@@ -106,6 +106,10 @@ struct Scene {
 			GLuint LIGHT_DIRECTION_vec3_array = -1U;
 			GLuint LIGHT_ENERGY_vec3_array = -1U;
 			GLuint LIGHT_CUTOFF_float_array = -1U;
+			//text
+			GLuint TEXT_BOOL = -1U;
+			GLuint TEXT_BOOL2 = -1U;
+			GLuint TEXT_COLOR = -1U;
 
 			//texture objects to bind for the first TextureCount textures:
 			enum : uint32_t { TextureCount = 4 };
@@ -167,11 +171,11 @@ struct Scene {
 	void draw(Camera const& camera) const;
 
 	//All sprite drawining is handled here, including updating animations, quad creation, translation, and drawing
-	void spriteDraw(Camera const& camera, bool proj = false);
+	void spriteDraw(Camera const& camera, bool proj = false, bool play = false);
 
 	//..sometimes, you want to draw with a custom projection matrix and/or light space:
 	void draw(glm::mat4 const &world_to_clip, glm::mat4x3 const &world_to_light = glm::mat4x3(1.0f)) const;
-	void spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light = glm::mat4x3(1.0f), bool proj = false);
+	void spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light = glm::mat4x3(1.0f), bool proj = false, bool play = false);
 
 
 	//add transforms/objects/cameras from a scene file to this scene:
