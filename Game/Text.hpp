@@ -70,7 +70,7 @@ public:
 	}
 
 
-	Text::Text(std::string fontString) {
+	Text::Text(std::string fontString, int fontSize) {
 		std::string properPath = data_path(fontString);
 		hb_font = NULL;
 		hb_font = NULL;
@@ -81,7 +81,7 @@ public:
 			abort();
 		if ((ft_error = FT_New_Face(ft_library, properPath.c_str(), 0, &ft_face)))
 			abort();
-		if ((ft_error = FT_Set_Char_Size(ft_face, FONT_SIZE * 64, FONT_SIZE * 64, 0, 0)))
+		if ((ft_error = FT_Set_Char_Size(ft_face, fontSize * 64, fontSize * 64, 0, 0)))
 			abort();
 
 
@@ -103,10 +103,9 @@ public:
 	std::vector<TexInfo> foundGlyph;
 	unsigned int getTexture(unsigned int codepoint, bool* success);
 	void createBuf(std::string text);
-	void setFont(std::string fontfile);
 	FT_Library ft_library = nullptr;
 	hb_buffer_t* hb_buffer = nullptr;
-	void displayText(std::string inText, size_t level);
+	void displayText(std::string inText, size_t level, glm::vec2 pos, glm::vec2 size, float scale);
 	
 	glm::vec3 textColor = glm::vec3(1.0f);
 

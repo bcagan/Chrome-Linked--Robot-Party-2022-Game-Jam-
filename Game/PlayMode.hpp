@@ -43,6 +43,7 @@ struct PlayMode : Mode {
 	struct Button {
 		uint8_t downs = 0;
 		uint8_t pressed = 0;
+		uint8_t unpressed = 1;
 	} left, right, down, up, space,in,out, arrowleft,arrowright,arrowup,arrowdown, rightfire, leftfire, melee;
 
 	//local copy of the game scene (so code can change it during gameplay):
@@ -80,8 +81,8 @@ struct PlayMode : Mode {
 		int projInter(Projectile& proj, Sprite hitSprite, float spriteHeight, float spriteWidth, glm::vec3 spritePos);
 
 		//Proj damage
-		float rapidPlayerDam = 1.5f;
-		float slowPlayerDam = 8.f;
+		float rapidPlayerDam = 1.0f;
+		float slowPlayerDam = 4.f;
 		float meleePlayerDam = 30.f;
 
 		Projectile genericProjectile1;
@@ -206,6 +207,7 @@ struct PlayMode : Mode {
 
 		std::list<Projectile>::iterator reflect;
 	} mech; 
+	void updateMechAnimation();
 
 
 	struct StateMachine {
@@ -249,6 +251,7 @@ struct PlayMode : Mode {
 
 	//GUI
 	Text text;
+	Sprite* textbox;
 
 };
 

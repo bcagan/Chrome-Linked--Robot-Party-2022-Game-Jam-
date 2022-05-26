@@ -53,7 +53,6 @@ void Sprite::addAnimation(std::string fileName, bool verbosity) {
 			for (int t = 0; t < numFrames; t++) {
 				int texSize;
 				fstream.getline(intline, 32);
-				 std::cout << "Frame " << t << " layer " << l << " intline " << intline << std::endl;
 				texSize = std::stoi(std::string(intline));
 				char* data = (char*)malloc(sizeof(char)*texSize);
 				fstream.read(data, texSize);

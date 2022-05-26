@@ -65,7 +65,6 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		return newBBox;
 	};
 
-	text = Text();
 
 
 	//Enemies
@@ -137,14 +136,26 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		zivMech.pipeline = lit_color_texture_program_sprite_pipeline;
 		zivMech.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
 		zivMech.addAnimation("/Sources/Animations/ANIMATE_ZivMechFlying.txt");
+		zivMech.addAnimation("/Sources/Animations/ANIMATE_ZivMechFlyingLeft.txt");
+		zivMech.addAnimation("/Sources/Animations/ANIMATE_ZivMechFlyingRight.txt");
 		zivMech.pipeline.setAnimation("ZivMechFlying");
 		zivMech.pipeline.defaultAnimation = (*zivMech.pipeline.animations)["ZivMechFlying"];
 		zivMech.width = 128; zivMech.height = 128;
 		zivMech.size = glm::vec2(1.f);
 		scene.spriteLib["zivMech"] = zivMech;
 
+		Sprite textboxSprite;
+		textboxSprite.pipeline = lit_color_texture_program_sprite_pipeline;
+		textboxSprite.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
+		textboxSprite.addAnimation("/Sources/Animations/ANIMATE_textbox.txt");
+		textboxSprite.pipeline.setAnimation("textbox");
+		textboxSprite.pipeline.defaultAnimation = (*zivMech.pipeline.animations)["textbox"];
+		textboxSprite.width = 3840; textboxSprite.height = 2160;
+		scene.spriteLib["textbox"] = textboxSprite;
+
 	}
-	
+
+
 	glm::vec3 initPos = glm::vec3(0.f);
 
 	for (auto& transform : scene.transforms) {
@@ -201,6 +212,17 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	camera = &scene.cameras.front();
 
 
+	//Text
+	text = Text(std::string("OpenSans-Regular.ttf"), 64);
+	Sprite textboxSprite = scene.spriteLib["textbox"];
+	textboxSprite.name = std::string("textbox");
+	textboxSprite.pipeline.isGui = true;
+	textboxSprite.pipeline.doLight = false;
+	textboxSprite.size = glm::vec2(1/160.f);
+	textboxSprite.pos = camera->transform->make_local_to_world() * glm::vec4(-0.4f,-0.25f,-1.f,1.f);
+	scene.sprites.push_back(textboxSprite);
+
+
 	//Init game data
 	vertMovement.currentState = vertMovement.STATE_vertSteady;
 	for (auto& sprite : scene.sprites) {
@@ -218,7 +240,13 @@ PlayMode::PlayMode() : scene(*test_scene) {
 			mech.controlReticle->pipeline.doLight = false;
 			mech.controlReticle->pipeline.isGui = true;
 		}
+		else if (sprite.name == std::string("textbox")) {
+			textbox = &sprite;
+		}
 	}
+
+
+
 
 
 	//Add sun and other lights
@@ -788,12 +816,18 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	}
 	else if (evt.type == SDL_MOUSEBUTTONDOWN) {
 		if (evt.button.button == SDL_BUTTON_LEFT) rightfire.pressed = true;
+		else if (evt.button.button == SDL_BUTTON_RIGHT) {
+			melee.pressed = true;
+		}
 		else if (evt.button.button == SDL_BUTTON_RIGHT) melee.pressed = true;
 		return true;
 	}
 	else if (evt.type == SDL_MOUSEBUTTONUP) {
 		if (evt.button.button == SDL_BUTTON_LEFT) rightfire.pressed = false;
-		else if (evt.button.button == SDL_BUTTON_RIGHT) melee.pressed = false;
+		else if (evt.button.button == SDL_BUTTON_RIGHT) {
+			melee.pressed = false;
+			melee.unpressed = true;
+		}
 		return true;
 	}
 	else if (evt.type == SDL_MOUSEMOTION)
@@ -952,7 +986,7 @@ void PlayMode::StateMachine::transitionMachine( int from, int to) {
 			transitionState = STATE_leftToRight;
 
 			framesDuring = 0;
-			framesTo = 9;
+			framesTo = 12;
 		}
 	}
 	else if (from == STATE_left && to == STATE_horiSteady) {
@@ -974,7 +1008,7 @@ void PlayMode::StateMachine::transitionMachine( int from, int to) {
 			transitionState = STATE_rightToLeft;
 
 			framesDuring = 0;
-			framesTo = 9;
+			framesTo = 12;
 		}
 		
 	}
@@ -1086,6 +1120,7 @@ void PlayMode::offsetObjects() {
 	mech.playerSprite->pos += level.posOffsetDelta;
 	mech.reticle->pos += level.posOffsetDelta;
 	mech.controlReticle->pos += level.posOffsetDelta;
+	textbox->pos += level.posOffsetDelta;
 	for (auto& iter : enemies) {
 		if(iter.alive) iter.initPos += level.posOffsetDelta;
 		if (iter.alive && iter.inMelee) {
@@ -1098,6 +1133,24 @@ void PlayMode::offsetObjects() {
 		iter.projSprite.pos += level.posOffsetDelta;
 	}
 	camera->transform->position += level.posOffsetDelta;
+}
+
+void PlayMode::updateMechAnimation() {
+	std::string nextAnimation;
+	switch (horiMovement.currentState)
+	{
+	case(StateMachine::STATE_left):
+		nextAnimation = "ZivMechFlyingLeft";
+		break;
+	case(StateMachine::STATE_right):
+		nextAnimation = "ZivMechFlyingRight";
+		break;
+	default:
+		nextAnimation = "ZivMechFlying";
+		break;
+	}
+	if (horiMovement.inTransition) nextAnimation = "ZivMechFlying";
+	if (nextAnimation != mech.playerSprite->pipeline.currentAnimation) mech.playerSprite->pipeline.setAnimation(nextAnimation);
 }
 
 void PlayMode::update(float elapsed) {
@@ -1113,6 +1166,7 @@ void PlayMode::update(float elapsed) {
 		if (!level.bossCheck())level.update(elapsed);
 		if(!level.bossCheck()) offsetObjects();
 
+
 		/*{ //update listener to camera position:
 			glm::mat4x3 frame = camera->transform->make_local_to_parent();
 			glm::vec3 right = frame[0];
@@ -1127,6 +1181,7 @@ void PlayMode::update(float elapsed) {
 
 		//Update transition machine
 		horiMovement.updateStateMachine();
+		updateMechAnimation();
 		//Horizontal
 		glm::vec3 motionVec = glm::vec3(0.f);
 		glm::vec3 reticleMotionVec = glm::vec3(0.f);
@@ -1203,9 +1258,9 @@ void PlayMode::update(float elapsed) {
 		float cursorRight = camera->aspect * cursorBottom;
 		float cursorLeft = -cursorRight;
 		glm::vec3 cursorXYZ = glm::vec3((cursorRight - cursorLeft) * cursorPos.x + cursorLeft, (cursorTop - cursorBottom) * cursorPos.y +
-			cursorBottom, 1.f) * -(playerCamDepth + 10.f);
+			cursorBottom, 1.f) * -(playerCamDepth + 2.f);
 		mech.controlReticle->pos = scene.cameras.front().transform->make_local_to_world() * glm::vec4(cursorXYZ, 1.f);
-		float depthDif = (playerCamDepth + 10.0f) / (playerCamDepth * 2.f);
+		float depthDif = (playerCamDepth + 2.f) / (playerCamDepth * 2.f);
 		mech.controlReticle->size = glm::vec2(depthDif);
 
 		if (playerCamHeight + mech.playerSprite->size.y * mech.playerSprite->height / SPRITE_SCALE > maxHeight) {
@@ -1256,8 +1311,8 @@ void PlayMode::update(float elapsed) {
 			horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_horiSteady);
 		}
 
-		float offsetReticleHeight = reticleCamHeight + mech.reticle->height * mech.reticle->size.y / SPRITE_SCALE / 2.f / -(playerCamDepth + 10.f);
-		float offsetReticleWidth = reticleCamWidth + mech.reticle->width * mech.reticle->size.x / SPRITE_SCALE / 2.f / -(playerCamDepth + 10.f);
+		float offsetReticleHeight = reticleCamHeight + mech.reticle->height * mech.reticle->size.y / SPRITE_SCALE / 2.f / -(playerCamDepth + 2.f);
+		float offsetReticleWidth = reticleCamWidth + mech.reticle->width * mech.reticle->size.x / SPRITE_SCALE / 2.f / -(playerCamDepth + 2);
 		glm::vec3 offsetReticleCamPos = glm::vec3(offsetReticleWidth, offsetReticleHeight, reticleCamPos.z);
 
 
@@ -1273,7 +1328,8 @@ void PlayMode::update(float elapsed) {
 		//Projectiles and melee
 			//Melee:
 		if (mech.meleeTimer > 0) mech.meleeTimer--;
-		else if (melee.pressed && mech.meleeTimer == 0) {
+		else if (melee.pressed && mech.meleeTimer == 0 && melee.unpressed) {
+			melee.unpressed = false;
 			mech.meleeTimer = mech.meleeTime;
 			createProjectileMech(Projectile::PROJ_Melee, glm::vec3(0.f), mech.playerSprite->pos );
 		}
@@ -1284,9 +1340,8 @@ void PlayMode::update(float elapsed) {
 			leftFiredCooldown = rapidFiredCooldown;
 		}
 		if (rightFiredCooldown == 0 && rightfire.pressed) {
-			glm::vec3 controlProjMotion = glm::normalize(camera->transform->make_local_to_world() * glm::vec4(reticleCamPos + newTransform.rotation *
-				glm::vec3(mech.reticle->size.x * mech.reticle->width / SPRITE_SCALE / 2.f / (playerCamDepth + 10.f), mech.reticle->size.y * mech.reticle->height / SPRITE_SCALE / 2.f / (playerCamDepth + 10.f), 0.f), 1.f) - mech.playerSprite->pos);
-			createProjectileMech(Projectile::PROJ_SlowPlayer, controlProjMotion, mech.playerSprite->pos);
+			glm::vec3 controlProjMotion = glm::normalize(newTransform.rotation * glm::vec3(0.f,1.f, 0.f));
+			createProjectileMech(Projectile::PROJ_SlowPlayer, controlProjMotion, camera->transform->make_local_to_world()*glm::vec4(cursorXYZ ,1.0f));
 			rightFiredCooldown = slowFiredCooldown;
 		}
 		updateProjectiles(elapsed);
@@ -1343,8 +1398,6 @@ void PlayMode::update(float elapsed) {
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
-
-	text.displayText(std::string("Hello!"), 0);
 
 
 	//Add any temp sprites to sprite list
@@ -1437,9 +1490,9 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	scene.draw(*camera);
 	GL_ERRORS();
-	scene.spriteDraw(*camera,true,false);
-	scene.spriteDraw(*camera, false,false);
-	scene.spriteDraw(*camera, false,true);
+	scene.spriteDraw(*camera,true,false,false);
+	scene.spriteDraw(*camera, false,false,false);
+	scene.spriteDraw(*camera, false,true,false);
 	GL_ERRORS();
 
 	
@@ -1461,7 +1514,11 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		scene.sprites.erase(deleteVec[deleteInd]);
 	}
 	deleteVec.clear();
-}
+	scene.spriteDraw(*camera, false, false, true);
+	text.textColor = glm::vec3(1.f);
+	text.displayText(std::string("Hello! This is a test on how long I can make a text string render before it does a new line. And this is even more text so I can prove how the box handles things! Since I made the box longer, I mas as well add yet another line to test this further."),
+		0, glm::vec2(-0.6f, -.6f), glm::vec2(1.2f,0.4f), 0.0012f);
+ }
 
 glm::vec3 PlayMode::get_player_position() {
 	//the vertex position here was read from the model in blender:

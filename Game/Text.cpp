@@ -106,16 +106,17 @@ void Text::createBuf(std::string text) {
 
 
 
-void Text::displayText(std::string inText, size_t level) { //Also uses https://learnopengl.com/In-Practice/Text-Rendering
+void Text::displayText(std::string inText, size_t level, glm::vec2 pos, glm::vec2 size, float scale) { //Also uses https://learnopengl.com/In-Practice/Text-Rendering
 
+	createBuf(" ");
+	Glyph spaceGlyph = curLine[0];
+	int spaceTexID = spaceGlyph.textureID;
 	//Create glyphs
 	createBuf(inText);
 
+	float x = pos.x; float y = pos.y;
 
 	//Set variables
-	float x = 0.0f;
-	float z = 0.0f;
-	float scale = 0.015f;
 	glm::vec3 color = glm::vec3(1.f, 1.0f, 1.0f) * textColor;
 	
 	GLuint VAO, VBO;
@@ -150,24 +151,31 @@ void Text::displayText(std::string inText, size_t level) { //Also uses https://l
 	GL_ERRORS();
 
 	//Should be generealized to its own function later
+	float yOff = 0.f;
 
 	assert(!curLine.empty());
 	for (size_t g = 0; g < curLine.size(); g++) {
 		Glyph glyph = curLine[g];
 
 		//Create plane mesh
+		
 		float xPos = x + glyph.bearing.x * scale;
-		float zPos = z - (glyph.size.y - glyph.bearing.y) * scale;
+		float yPos = y - (glyph.size.y - glyph.bearing.y) * scale - yOff;
 		float width = glyph.size.x * scale;
+		if (xPos + width > pos.x + size.x && glyph.textureID == spaceTexID) {
+			yOff += 0.125f;
+			x = pos.x -(glyph.advance) * scale;
+		}
 		float height = glyph.size.y * scale;
+		if (yPos - height < pos.y - size.y) break;
 		std::array<Vertex, 6> vertices;
 
-		vertices[0].Position = glm::vec4(xPos, -1.f, zPos + height, 1.0f);
-		vertices[1].Position = glm::vec4(xPos, -1.f, zPos, 1.0f);
-		vertices[2].Position = glm::vec4(xPos + width,-1.f, zPos, 1.0f);
-		vertices[3].Position = glm::vec4(xPos, 1.f, zPos + height, 1.0f);
-		vertices[4].Position = glm::vec4(xPos + width, -1.f, zPos, 1.0f);
-		vertices[5].Position = glm::vec4(xPos + width, -1.f, zPos + height, 1.0f);
+		vertices[0].Position = glm::vec4(xPos, yPos + height, 0.f, 1.0f);
+		vertices[1].Position = glm::vec4(xPos,  yPos, 0.f, 1.0f);
+		vertices[2].Position = glm::vec4(xPos + width, yPos, 0.f, 1.0f);
+		vertices[3].Position = glm::vec4(xPos, yPos + height, 0.f, 1.0f);
+		vertices[4].Position = glm::vec4(xPos + width, yPos, 0.f, 1.0f);
+		vertices[5].Position = glm::vec4(xPos + width, yPos + height, 0.f,1.0f);
 
 		for (size_t c = 0; c < 6; c++) {
 			vertices[c].Normal = glm::vec3(0.0f, 0.0f, 1.0f);
