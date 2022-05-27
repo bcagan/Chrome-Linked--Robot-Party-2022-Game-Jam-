@@ -53,14 +53,18 @@ public:
 		hb_buffer = NULL;
 		FT_Error ft_error;
 
-		if ((ft_error = FT_Init_FreeType(&ft_library)))
+		if ((ft_error = FT_Init_FreeType(&ft_library))) {
+			std::cout << (uint8_t) ft_error << std::endl;
 			abort();
+		}
 		if ((ft_error = FT_New_Face(ft_library, properPath.c_str(), 0, &ft_face))) {
 			std::cout << "ERROR: Cannot open " << fontString  << std::endl;
 			abort();
 		}
-		if ((ft_error = FT_Set_Char_Size(ft_face, FONT_SIZE * 64, FONT_SIZE * 64, 0, 0)))
+		if ((ft_error = FT_Set_Char_Size(ft_face, FONT_SIZE * 64, FONT_SIZE * 64, 0, 0))) {
+			std::cout << (uint8_t)ft_error << std::endl;
 			abort();
+		}
 
 
 		/* Create hb-ft font. */
@@ -77,16 +81,23 @@ public:
 		hb_buffer = NULL;
 		FT_Error ft_error;
 
-		if ((ft_error = FT_Init_FreeType(&ft_library)))
+		if ((ft_error = FT_Init_FreeType(&ft_library))) {
+			std::cout << (uint8_t)ft_error << std::endl;
 			abort();
-		if ((ft_error = FT_New_Face(ft_library, properPath.c_str(), 0, &ft_face)))
+		}
+		if ((ft_error = FT_New_Face(ft_library, properPath.c_str(), 0, &ft_face))) {
+			std::cout << "ERROR: Cannot open " << fontString << std::endl;
 			abort();
-		if ((ft_error = FT_Set_Char_Size(ft_face, fontSize * 64, fontSize * 64, 0, 0)))
+		}
+		if ((ft_error = FT_Set_Char_Size(ft_face, FONT_SIZE * 64, FONT_SIZE * 64, 0, 0))) {
+			std::cout << (uint8_t)ft_error << std::endl;
 			abort();
+		}
 
 
 		/* Create hb-ft font. */
 		hb_font = hb_ft_font_create(ft_face, NULL);
+		assert(hb_font);
 		foundGlyph = std::vector<TexInfo>();
 
 	}

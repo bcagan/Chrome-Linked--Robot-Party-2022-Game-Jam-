@@ -10,6 +10,7 @@
 #include "Scene.hpp"
 #include "Sprite.hpp"
 #include "Level.hpp"
+#include "Dialogue.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -213,7 +214,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 
 
 	//Text
-	text = Text(std::string("OpenSans-Regular.ttf"), 64);
+	text = Text(std::string("Play-Regular.ttf"), 128);
 	Sprite textboxSprite = scene.spriteLib["textbox"];
 	textboxSprite.name = std::string("textbox");
 	textboxSprite.pipeline.isGui = true;
@@ -221,7 +222,15 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	textboxSprite.size = glm::vec2(1/160.f);
 	textboxSprite.pos = camera->transform->make_local_to_world() * glm::vec4(-0.4f,-0.25f,-1.f,1.f);
 	scene.sprites.push_back(textboxSprite);
+	prologue = Dialogue("Sources/Dialogues/DIALOGUE_test0.txt");
+	std::cout << prologue.currentTex() << std::endl;
+	do {
+		prologue.nextLine();
+		std::cout << prologue.currentTex() << std::endl;
+	} while (!prologue.atEnd());
 
+	//Had I done my due dilligence, and wrote a quick quad rendering shader, this would have been far easier. The texture is 4k. But instead I decided
+	//To use my 3D shader, and ended up having to fudge the positions to get them to look right. Whoops, lessons learned :/ Sometimes more work is actually less work and better work.
 
 	//Init game data
 	vertMovement.currentState = vertMovement.STATE_vertSteady;
@@ -1397,6 +1406,12 @@ void PlayMode::update(float elapsed) {
 	}
 }
 
+void PlayMode::drawTextbox(std::string textStr) {
+	scene.spriteDraw(*camera, false, false, true);
+	text.textColor = glm::vec3(1.f);
+	text.displayText(textStr,	0, glm::vec2(-0.55f, -.6f), glm::vec2(1.2f,0.4f), 0.0016f);
+}
+
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 
@@ -1514,10 +1529,16 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		scene.sprites.erase(deleteVec[deleteInd]);
 	}
 	deleteVec.clear();
-	scene.spriteDraw(*camera, false, false, true);
-	text.textColor = glm::vec3(1.f);
-	text.displayText(std::string("Hello! This is a test on how long I can make a text string render before it does a new line. And this is even more text so I can prove how the box handles things! Since I made the box longer, I mas as well add yet another line to test this further."),
-		0, glm::vec2(-0.6f, -.6f), glm::vec2(1.2f,0.4f), 0.0012f);
+
+	//drawTextbox("This is a very quick test of a more reasonable box routine.");
+
+	float healthPercentage = (float)((int)(mech.health / mech.maxHealth * 1000.f)) / 10.f;
+	if (healthPercentage < 1 / 3.f * 100.f) text.textColor = glm::vec3(1.f, 0.3f, 0.3f);
+	else text.textColor = glm::vec3(0.3f, 1.f, 0.6f);
+	std::string healthString;
+	if(healthPercentage == 100.f) healthString = std::string("Health: ").append(std::to_string(healthPercentage).substr(0,3)).append(" %");
+	else healthString = std::string("Health: ").append(std::to_string(healthPercentage).substr(0, 4)).append("%");
+	text.displayText(healthString, 0, glm::vec2(-.9f, 0.9f), glm::vec2(0.5f, 0.2f), 0.0016f);
  }
 
 glm::vec3 PlayMode::get_player_position() {

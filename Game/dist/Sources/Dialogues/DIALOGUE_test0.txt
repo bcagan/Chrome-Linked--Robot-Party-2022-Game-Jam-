@@ -1,0 +1,11 @@
+BG:
+bgtest0.txt
+EOB
+PORT:
+ZivPortrait.txt
+MysPortrait.txt
+EOB
+DIAL:
+1 0 ???: ...
+0 1 Ziv: Who are you?
+EOB

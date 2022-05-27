@@ -165,6 +165,7 @@ COMMON_NAMES =
 	GL
 	Load
 	GameScene
+	Dialogue
 	;
 
 

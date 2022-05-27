@@ -17,6 +17,7 @@
 #include "Sprite.hpp"
 #include "Level.hpp"
 #include "Text.hpp"
+#include "Dialogue.hpp"
 #define PI_F 3.1415926f
 
 
@@ -199,6 +200,7 @@ struct PlayMode : Mode {
 		Sprite* controlReticle;
 
 		float health = 200.f;
+		float maxHealth = 200.f;
 		int meleeHitInvince = 45;
 		int meleeHitInvinceTimer = 0;
 
@@ -252,6 +254,9 @@ struct PlayMode : Mode {
 	//GUI
 	Text text;
 	Sprite* textbox;
+	Dialogue prologue;
+
+	void drawTextbox(std::string textStr);
 
 };
 
