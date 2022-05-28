@@ -8,6 +8,7 @@
 #include <fstream>
 #include <array>
 #include "PlayMode.hpp"
+#include "QuadTextureProgram.hpp"
 
 //-------------------------
 
@@ -16,6 +17,11 @@ struct Vertex {
 	glm::vec4 Position;
 	glm::vec3 Normal;
 	glm::vec4 Color;
+	glm::vec2 TexCoord;
+};
+
+struct Quadtex {
+	glm::vec4 Position;
 	glm::vec2 TexCoord;
 };
 
@@ -90,6 +96,94 @@ glm::mat4 Scene::Camera::make_projection() const {
 //-------------------------
 
 
+void Scene::drawQuad() const {
+	GLuint vao = 0;
+	GLuint vbo = 0;
+
+
+	glUseProgram(quad_texture_program_pipeline.program);
+	//Set up texture 
+	if (quad_texture_program_pipeline.TEX != -1U) {
+		glActiveTexture(GL_TEXTURE0);
+		GL_ERRORS();
+		glBindTexture(quad_texture_program_pipeline.target, quad_texture_program_pipeline.texture);
+		GL_ERRORS();
+		glUniform1i(glGetUniformLocation(quad_texture_program_pipeline.program, "quadTEX"), 0);
+		GL_ERRORS();
+	}
+	else {
+		std::cout << "ERROR: TEX, Quad Rendering\n";
+		assert(false);
+	}
+	GL_ERRORS();
+
+	//Create quad
+	std::array<Quadtex, 6> vertices;
+	vertices[0].Position = glm::vec4(-1.f, 0.f, 1.f, 1.0f);
+	vertices[1].Position = glm::vec4(-1.f, 0.f, -1.f, 1.0f);
+	vertices[2].Position = glm::vec4(1.f, 0.f, -1.f, 1.0f);
+	vertices[3].Position = glm::vec4(-1.f, 0.f, 1.f, 1.0f);
+	vertices[4].Position = glm::vec4(1.f, 0.f, -1.f, 1.0f);
+	vertices[5].Position = glm::vec4(1.f, 0.f, 1.f, 1.0f);
+	vertices[0].TexCoord = glm::vec2(0.0f, 0.0f);
+	vertices[1].TexCoord = glm::vec2(0.0f, 1.0f);
+	vertices[2].TexCoord = glm::vec2(1.0f, 1.0f);
+	vertices[3].TexCoord = glm::vec2(0.0f, 0.0f);
+	vertices[4].TexCoord = glm::vec2(1.0f, 1.0f);
+	vertices[5].TexCoord = glm::vec2(1.0f, 0.0f);
+	
+	if ( quad_texture_program_pipeline.position != -1U &&  quad_texture_program_pipeline.texcoord != -1U) {
+		GL_ERRORS();
+		glGenVertexArrays(1, &vao);
+		GL_ERRORS();
+		glBindVertexArray(vao);
+		GL_ERRORS();
+		glGenBuffers(1, &vbo); //Creating 1 generic buffer
+		GL_ERRORS();
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		GL_ERRORS();
+		glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(Quadtex), (void*)vertices.data(), GL_DYNAMIC_DRAW);
+		GL_ERRORS();
+		glEnableVertexAttribArray(quad_texture_program_pipeline.position);
+		GL_ERRORS();
+		glVertexAttribPointer(quad_texture_program_pipeline.position, 4, GL_FLOAT, GL_FALSE, sizeof(Quadtex), (void*)0);
+		GL_ERRORS();
+		glEnableVertexAttribArray(quad_texture_program_pipeline.texcoord);
+		GL_ERRORS();
+		glVertexAttribPointer(quad_texture_program_pipeline.texcoord, 2, GL_FLOAT, GL_FALSE, sizeof(Quadtex), (void*)(4 * sizeof(float)));
+		GL_ERRORS();
+
+
+		
+		glDisable(GL_DEPTH_TEST);
+
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		glEnable(GL_DEPTH_TEST);
+
+		GL_ERRORS();
+
+
+		//un-bind textures:
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(quad_texture_program_pipeline.target, 0);
+
+		GL_ERRORS();
+
+		glUseProgram(0);
+		glBindVertexArray(0);
+		glDeleteVertexArrays(1, &vao);
+		glDeleteBuffers(1, &vbo);
+	}
+	else {
+		std::cout << "Error: Vertices, Quad Rendering\n";
+		assert(false);
+	}
+
+
+	GL_ERRORS();
+}
+
 void Scene::draw(Camera const& camera) const {
 	assert(camera.transform);
 	glm::mat4 world_to_clip = camera.make_projection() * glm::mat4(camera.transform->make_world_to_local());
@@ -101,7 +195,7 @@ void Scene::draw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_lig
 
 	//Iterate through all drawables, sending each one to OpenGL:
 	for (auto const& drawable : drawables) {
-		//Reference to drawable's pipeline for convenience:
+		//Reference to drawable's s for convenience:
 		Scene::Drawable::Pipeline const& pipeline = drawable.pipeline;
 
 		//skip any drawables without a shader program set:

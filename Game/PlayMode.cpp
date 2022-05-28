@@ -1,5 +1,6 @@
 #include "PlayMode.hpp"
 
+#include "QuadTextureProgram.hpp"
 #include "LitColorTextureProgram.hpp"
 
 #include "DrawLines.hpp"
@@ -142,7 +143,9 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		zivMech.pipeline.setAnimation("ZivMechFlying");
 		zivMech.pipeline.defaultAnimation = (*zivMech.pipeline.animations)["ZivMechFlying"];
 		zivMech.width = 128; zivMech.height = 128;
-		zivMech.size = glm::vec2(1.f);
+		zivMech.size = glm::vec2(1.f); 
+		zivMech.hitBoxOff = glm::vec2(0.15 * zivMech.width * zivMech.size.x / SPRITE_SCALE, 0.15 * zivMech.width * zivMech.size.y / SPRITE_SCALE);
+		zivMech.hitBoxSize = glm::vec2(0.7f);
 		scene.spriteLib["zivMech"] = zivMech;
 
 		Sprite textboxSprite;
@@ -223,11 +226,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	textboxSprite.pos = camera->transform->make_local_to_world() * glm::vec4(-0.4f,-0.25f,-1.f,1.f);
 	scene.sprites.push_back(textboxSprite);
 	prologue = Dialogue("Sources/Dialogues/DIALOGUE_test0.txt");
-	std::cout << prologue.currentTex() << std::endl;
-	do {
-		prologue.nextLine();
-		std::cout << prologue.currentTex() << std::endl;
-	} while (!prologue.atEnd());
+	
 
 	//Had I done my due dilligence, and wrote a quick quad rendering shader, this would have been far easier. The texture is 4k. But instead I decided
 	//To use my 3D shader, and ended up having to fudge the positions to get them to look right. Whoops, lessons learned :/ Sometimes more work is actually less work and better work.
@@ -659,7 +658,11 @@ void PlayMode::spawnEnemies() { //Spawn all enemies that are within spawnDist di
 		}
 		else stillSpawn = false;
 	}
-	if (level.bossCheck() && !bossJebbSpawned) {
+	if (level.bossCheck() && !bossJebbSpawned && !continueGame) {
+		curDisplay = &prologue;
+		displayDialogue();
+	}
+	else if (level.bossCheck() && !bossJebbSpawned && continueGame) {
 		bossJebbSpawned = true;
 		Enemy newEnemy = bossJebb;
 		newEnemy.initPos = mech.playerSprite->pos + camera->transform->rotation*glm::vec3(-bossJebb.sprite.width* bossJebb.sprite.size.x/2.f/SPRITE_SCALE, -bossJebb.sprite.height * bossJebb.sprite.size.y / 2.f / SPRITE_SCALE,-50.f);
@@ -705,9 +708,16 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_a) {
 			left.downs += 1;
+			if (dialogueDisplay && !left.pressed && !curDisplay->atStart()) curDisplay->nextLine();
 			left.pressed = true;
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_d) {
+			if (dialogueDisplay && !right.pressed && curDisplay->atEnd()) {
+				pauseMode = false;
+				dialogueDisplay = false;
+				continueGame = true;
+			}
+			if (dialogueDisplay && !right.pressed) curDisplay->nextLine();
 			right.downs += 1;
 			right.pressed = true;
 			return true;
@@ -768,6 +778,11 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			leftfire.pressed = true;
 			return true;
 		}
+		else if (evt.key.keysym.sym == SDLK_t) {
+			if (!T.pressed && dialogueDisplay) toggleTextBox();
+			T.pressed = true;
+			return true;
+		}
 	} else if (evt.type == SDL_KEYUP) {
 		if (evt.key.keysym.sym == SDLK_a) {
 			left.pressed = false;
@@ -820,6 +835,10 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		}
 		else if (evt.key.keysym.sym == SDLK_DOWN) {
 			arrowdown.pressed = false;
+			return true;
+		}
+		else if (evt.key.keysym.sym == SDLK_t) {
+			T.pressed = false;
 			return true;
 		}
 	}
@@ -1162,7 +1181,16 @@ void PlayMode::updateMechAnimation() {
 	if (nextAnimation != mech.playerSprite->pipeline.currentAnimation) mech.playerSprite->pipeline.setAnimation(nextAnimation);
 }
 
+void PlayMode::displayDialogue() {
+	dialogueDisplay = true;
+	textBoxDisplay = true;
+	while (!curDisplay->atStart()) curDisplay->lastLine();
+	pauseMode = true;
+	dialogueStart = true;
+}
+
 void PlayMode::update(float elapsed) {
+
 
 	if (!win && mech.health > 0.f) {
 
@@ -1172,9 +1200,10 @@ void PlayMode::update(float elapsed) {
 		cursorPos = glm::vec2((float)x / (float)screenW, (float)y / (float)screenH);
 
 		//Update level
-		if (!level.bossCheck())level.update(elapsed);
-		if(!level.bossCheck()) offsetObjects();
+		if (!level.bossCheck() && !pauseMode)level.update(elapsed);
+		if(!level.bossCheck() && !pauseMode) offsetObjects();
 
+		if (level.bossCheck() && !dialogueStart) continueGame = false;
 
 		/*{ //update listener to camera position:
 			glm::mat4x3 frame = camera->transform->make_local_to_parent();
@@ -1189,7 +1218,7 @@ void PlayMode::update(float elapsed) {
 
 
 		//Update transition machine
-		horiMovement.updateStateMachine();
+		if(!pauseMode) horiMovement.updateStateMachine();
 		updateMechAnimation();
 		//Horizontal
 		glm::vec3 motionVec = glm::vec3(0.f);
@@ -1197,26 +1226,28 @@ void PlayMode::update(float elapsed) {
 		float updateDistPlayer = spriteVelocityPlayer * elapsed;
 		float updateDistReticle = spriteVelocityReticle * elapsed;
 		//Horizontal
-		if (left.pressed && !right.pressed) {
-			horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_left);
-		}
-		else if (right.pressed && !left.pressed) {
-			horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_right);
-		}
-		else {
-			horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_horiSteady);
-		}
-		//Vertical
-		if (down.pressed && !up.pressed) {
-			vertMovement.transitionMachine(vertMovement.currentState, StateMachine::STATE_down);
-			//motionVec.z -= updateDist;
-		}
-		else if (up.pressed && !down.pressed) {
-			//motionVec.z += updateDist;
-			vertMovement.transitionMachine(vertMovement.currentState, StateMachine::STATE_up);
-		}
-		else {
-			vertMovement.transitionMachine(vertMovement.currentState, StateMachine::STATE_vertSteady);
+		if (!pauseMode) {
+			if (left.pressed && !right.pressed) {
+				horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_left);
+			}
+			else if (right.pressed && !left.pressed) {
+				horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_right);
+			}
+			else {
+				horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_horiSteady);
+			}
+			//Vertical
+			if (down.pressed && !up.pressed) {
+				vertMovement.transitionMachine(vertMovement.currentState, StateMachine::STATE_down);
+				//motionVec.z -= updateDist;
+			}
+			else if (up.pressed && !down.pressed) {
+				//motionVec.z += updateDist;
+				vertMovement.transitionMachine(vertMovement.currentState, StateMachine::STATE_up);
+			}
+			else {
+				vertMovement.transitionMachine(vertMovement.currentState, StateMachine::STATE_vertSteady);
+			}
 		}
 
 		//Update mech sprite pos
@@ -1246,7 +1277,7 @@ void PlayMode::update(float elapsed) {
 		newTransform.rotation = glm::normalize(
 			newTransform.rotation
 			* glm::angleAxis(-PI_F / 2.f, glm::vec3(1.0f, 0.0f, 0.0f)));
-		mech.playerSprite->pos += newTransform.rotation * motionVec;
+		if (!pauseMode) mech.playerSprite->pos += newTransform.rotation * motionVec;
 
 
 
@@ -1268,56 +1299,59 @@ void PlayMode::update(float elapsed) {
 		float cursorLeft = -cursorRight;
 		glm::vec3 cursorXYZ = glm::vec3((cursorRight - cursorLeft) * cursorPos.x + cursorLeft, (cursorTop - cursorBottom) * cursorPos.y +
 			cursorBottom, 1.f) * -(playerCamDepth + 2.f);
-		mech.controlReticle->pos = scene.cameras.front().transform->make_local_to_world() * glm::vec4(cursorXYZ, 1.f);
+		if (!pauseMode)mech.controlReticle->pos = scene.cameras.front().transform->make_local_to_world() * glm::vec4(cursorXYZ, 1.f);
 		float depthDif = (playerCamDepth + 2.f) / (playerCamDepth * 2.f);
-		mech.controlReticle->size = glm::vec2(depthDif);
+		if (!pauseMode)	mech.controlReticle->size = glm::vec2(depthDif);
 
-		if (playerCamHeight + mech.playerSprite->size.y * mech.playerSprite->height / SPRITE_SCALE > maxHeight) {
-			playerCamHeight = maxHeight - mech.playerSprite->size.y * mech.playerSprite->height / SPRITE_SCALE;
-			playerCamPos.y = playerCamHeight;
-			vertMovement.transitionMachine(vertMovement.currentState, vertMovement.STATE_vertSteady);
-		}
-		else if (playerCamHeight < minHeight) {
-			playerCamHeight = minHeight;
-			playerCamPos.y = playerCamHeight;
-			vertMovement.transitionMachine(vertMovement.currentState, vertMovement.STATE_vertSteady);
-		}
+		if (!pauseMode) {
+			if (playerCamHeight + mech.playerSprite->size.y * mech.playerSprite->height / SPRITE_SCALE > maxHeight) {
+				playerCamHeight = maxHeight - mech.playerSprite->size.y * mech.playerSprite->height / SPRITE_SCALE;
+				playerCamPos.y = playerCamHeight;
+				vertMovement.transitionMachine(vertMovement.currentState, vertMovement.STATE_vertSteady);
+			}
+			else if (playerCamHeight < minHeight) {
+				playerCamHeight = minHeight;
+				playerCamPos.y = playerCamHeight;
+				vertMovement.transitionMachine(vertMovement.currentState, vertMovement.STATE_vertSteady);
+			}
 
-		if (playerCamWidth + mech.playerSprite->size.x * mech.playerSprite->width / SPRITE_SCALE > maxWidth) {
-			playerCamWidth = maxWidth - mech.playerSprite->size.x * mech.playerSprite->width / SPRITE_SCALE;
-			playerCamPos.x = playerCamWidth;
-			horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_horiSteady);
+			if (playerCamWidth + mech.playerSprite->size.x * mech.playerSprite->width / SPRITE_SCALE > maxWidth) {
+				playerCamWidth = maxWidth - mech.playerSprite->size.x * mech.playerSprite->width / SPRITE_SCALE;
+				playerCamPos.x = playerCamWidth;
+				horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_horiSteady);
+			}
+			else if (playerCamWidth < minWidth) {
+				playerCamWidth = minWidth;
+				playerCamPos.x = playerCamWidth;
+				horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_horiSteady);
+			}
+			mech.playerSprite->pos = camera->transform->make_local_to_world() * glm::vec4(playerCamPos, 1.0f);
 		}
-		else if (playerCamWidth < minWidth) {
-			playerCamWidth = minWidth;
-			playerCamPos.x = playerCamWidth;
-			horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_horiSteady);
-		}
-		mech.playerSprite->pos = camera->transform->make_local_to_world() * glm::vec4(playerCamPos, 1.0f);
 
 		//Control reticle out of bounds
 		glm::vec3 reticleCamPos = (camera->transform->make_world_to_local() * glm::vec4(mech.controlReticle->pos, 1.0f));
 		float reticleCamHeight = reticleCamPos.y;
 		float reticleCamWidth = reticleCamPos.x;
+		if (!pauseMode) {
+			if (reticleCamHeight + mech.controlReticle->size.y * mech.controlReticle->height / SPRITE_SCALE > maxHeight) {
+				reticleCamHeight = maxHeight - mech.controlReticle->size.y * mech.controlReticle->height / SPRITE_SCALE;
+				reticleCamPos.y = reticleCamHeight;
+			}
+			else if (reticleCamHeight < minHeight) {
+				reticleCamHeight = minHeight;
+				reticleCamPos.y = reticleCamHeight;
+			}
 
-		if (reticleCamHeight + mech.controlReticle->size.y * mech.controlReticle->height / SPRITE_SCALE > maxHeight) {
-			reticleCamHeight = maxHeight - mech.controlReticle->size.y * mech.controlReticle->height / SPRITE_SCALE;
-			reticleCamPos.y = reticleCamHeight;
-		}
-		else if (reticleCamHeight < minHeight) {
-			reticleCamHeight = minHeight;
-			reticleCamPos.y = reticleCamHeight;
-		}
-
-		if (reticleCamWidth + mech.controlReticle->size.x * mech.controlReticle->width / SPRITE_SCALE > maxWidth) {
-			reticleCamWidth = maxWidth - mech.controlReticle->size.x * mech.controlReticle->width / SPRITE_SCALE;
-			reticleCamPos.x = reticleCamWidth;
-			horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_horiSteady);
-		}
-		else if (reticleCamWidth < minWidth) {
-			reticleCamWidth = minWidth;
-			reticleCamPos.x = reticleCamWidth;
-			horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_horiSteady);
+			if (reticleCamWidth + mech.controlReticle->size.x * mech.controlReticle->width / SPRITE_SCALE > maxWidth) {
+				reticleCamWidth = maxWidth - mech.controlReticle->size.x * mech.controlReticle->width / SPRITE_SCALE;
+				reticleCamPos.x = reticleCamWidth;
+				horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_horiSteady);
+			}
+			else if (reticleCamWidth < minWidth) {
+				reticleCamWidth = minWidth;
+				reticleCamPos.x = reticleCamWidth;
+				horiMovement.transitionMachine(horiMovement.currentState, StateMachine::STATE_horiSteady);
+			}
 		}
 
 		float offsetReticleHeight = reticleCamHeight + mech.reticle->height * mech.reticle->size.y / SPRITE_SCALE / 2.f / -(playerCamDepth + 2.f);
@@ -1325,41 +1359,42 @@ void PlayMode::update(float elapsed) {
 		glm::vec3 offsetReticleCamPos = glm::vec3(offsetReticleWidth, offsetReticleHeight, reticleCamPos.z);
 
 
-		if (playerCamHeight + mech.playerSprite->size.y * mech.playerSprite->height / SPRITE_SCALE < 0.85f * maxHeight) mech.reticle->pos = mech.playerSprite->pos + newTransform.rotation * glm::vec3((float)mech.playerSprite->width / SPRITE_SCALE / 8.f, 0.f, 1.13f);
-		else mech.reticle->pos = mech.playerSprite->pos + newTransform.rotation * glm::vec3((float)mech.playerSprite->width / SPRITE_SCALE / 8.f, 0.001f, 0.0f);
+		if (!pauseMode && playerCamHeight + mech.playerSprite->size.y * mech.playerSprite->height / SPRITE_SCALE < 0.85f * maxHeight) mech.reticle->pos = mech.playerSprite->pos + newTransform.rotation * glm::vec3((float)mech.playerSprite->width / SPRITE_SCALE / 8.f, 0.f, 1.13f);
+		else if (!pauseMode) mech.reticle->pos = mech.playerSprite->pos + newTransform.rotation * glm::vec3((float)mech.playerSprite->width / SPRITE_SCALE / 8.f, 0.001f, 0.0f);
 
 
 
+		if (!pauseMode) {
+			if (leftFiredCooldown > 0) leftFiredCooldown--;
+			if (rightFiredCooldown > 0) rightFiredCooldown--;
 
-		if (leftFiredCooldown > 0) leftFiredCooldown--;
-		if (rightFiredCooldown > 0) rightFiredCooldown--;
-
-		//Projectiles and melee
-			//Melee:
-		if (mech.meleeTimer > 0) mech.meleeTimer--;
-		else if (melee.pressed && mech.meleeTimer == 0 && melee.unpressed) {
-			melee.unpressed = false;
-			mech.meleeTimer = mech.meleeTime;
-			createProjectileMech(Projectile::PROJ_Melee, glm::vec3(0.f), mech.playerSprite->pos );
-		}
+			//Projectiles and melee
+				//Melee:
+			if (mech.meleeTimer > 0) mech.meleeTimer--;
+			else if (melee.pressed && mech.meleeTimer == 0 && melee.unpressed) {
+				melee.unpressed = false;
+				mech.meleeTimer = mech.meleeTime;
+				createProjectileMech(Projectile::PROJ_Melee, glm::vec3(0.f), mech.playerSprite->pos);
+			}
 			//Projectiles:
-		if (leftFiredCooldown == 0 && leftfire.pressed && mech.meleeTimer == 0) {
-			glm::vec3 playerProjMotion = glm::normalize(newTransform.rotation * glm::vec3(motionVec.x, motionVec.y + 5.f, motionVec.z));
-			createProjectileMech(Projectile::PROJ_RapidPlayer, playerProjMotion, mech.reticle->pos);
-			leftFiredCooldown = rapidFiredCooldown;
-		}
-		if (rightFiredCooldown == 0 && rightfire.pressed) {
-			glm::vec3 controlProjMotion = glm::normalize(newTransform.rotation * glm::vec3(0.f,1.f, 0.f));
-			createProjectileMech(Projectile::PROJ_SlowPlayer, controlProjMotion, camera->transform->make_local_to_world()*glm::vec4(cursorXYZ ,1.0f));
-			rightFiredCooldown = slowFiredCooldown;
+			if (leftFiredCooldown == 0 && leftfire.pressed && mech.meleeTimer == 0) {
+				glm::vec3 playerProjMotion = glm::normalize(newTransform.rotation * glm::vec3(motionVec.x, motionVec.y + 5.f, motionVec.z));
+				createProjectileMech(Projectile::PROJ_RapidPlayer, playerProjMotion, mech.reticle->pos);
+				leftFiredCooldown = rapidFiredCooldown;
+			}
+			if (rightFiredCooldown == 0 && rightfire.pressed) {
+				glm::vec3 controlProjMotion = glm::normalize(newTransform.rotation * glm::vec3(0.f, 1.f, 0.f));
+				createProjectileMech(Projectile::PROJ_SlowPlayer, controlProjMotion, camera->transform->make_local_to_world() * glm::vec4(cursorXYZ, 1.0f));
+				rightFiredCooldown = slowFiredCooldown;
+			}
 		}
 		updateProjectiles(elapsed);
 
 
 		//Update player health
-		if (mech.playerSprite->pipeline.hitTimer > 0)mech.playerSprite->pipeline.hitTimer--;
+		if (mech.playerSprite->pipeline.hitTimer > 0 && !pauseMode)mech.playerSprite->pipeline.hitTimer--;
 		int hitRes = hitRes = projectileHit(*(mech.playerSprite));
-		if (hitRes != -1 && mech.playerSprite->pipeline.hitTimer == 0) {
+		if (hitRes != -1 && mech.playerSprite->pipeline.hitTimer == 0 && !pauseMode) {
 			mech.playerSprite->pipeline.hitTimer = mech.playerSprite->pipeline.hitTime;
 			switch (hitRes) {
 			case(Projectile::PROJ_RapidEnemy):
@@ -1381,11 +1416,11 @@ void PlayMode::update(float elapsed) {
 				break;
 			}
 		}
-		if (mech.meleeHitInvinceTimer > 0) mech.meleeHitInvinceTimer--;
+		if (mech.meleeHitInvinceTimer > 0 && !pauseMode) mech.meleeHitInvinceTimer--;
 		//std::cout << "Health: " << mech.health << std::endl;
 		//If still alive, spawn enemies
-		updateAllEnemies();
-		spawnEnemies();
+		if (!pauseMode)updateAllEnemies();
+		if (!pauseMode)spawnEnemies();
 		for (auto& enem : enemies) {
 			glm::vec3 initPos = camera->transform->make_world_to_local() * glm::vec4(enem.sprite.pos, 1.f);
 		}
@@ -1406,10 +1441,12 @@ void PlayMode::update(float elapsed) {
 	}
 }
 
-void PlayMode::drawTextbox(std::string textStr) {
+void PlayMode::drawTextbox(std::string textStr, GLuint tex) {
+	quad_texture_program_pipeline.texture = tex;
+	scene.drawQuad();
 	scene.spriteDraw(*camera, false, false, true);
 	text.textColor = glm::vec3(1.f);
-	text.displayText(textStr,	0, glm::vec2(-0.55f, -.6f), glm::vec2(1.2f,0.4f), 0.0016f);
+	if(textBoxDisplay) text.displayText(textStr, 0, glm::vec2(-0.55f, -.6f), glm::vec2(1.2f,0.4f), 0.0016f);
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
@@ -1530,7 +1567,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	}
 	deleteVec.clear();
 
-	//drawTextbox("This is a very quick test of a more reasonable box routine.");
+	if(dialogueDisplay) drawTextbox(curDisplay->currentTex(), curDisplay->currentBG().first);
+	
 
 	float healthPercentage = (float)((int)(mech.health / mech.maxHealth * 1000.f)) / 10.f;
 	if (healthPercentage < 1 / 3.f * 100.f) text.textColor = glm::vec3(1.f, 0.3f, 0.3f);

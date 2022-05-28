@@ -45,7 +45,7 @@ struct PlayMode : Mode {
 		uint8_t downs = 0;
 		uint8_t pressed = 0;
 		uint8_t unpressed = 1;
-	} left, right, down, up, space,in,out, arrowleft,arrowright,arrowup,arrowdown, rightfire, leftfire, melee;
+	} left, right, down, up, space,in,out, arrowleft,arrowright,arrowup,arrowdown, rightfire, leftfire, melee, T;
 
 	//local copy of the game scene (so code can change it during gameplay):
 	Scene scene;
@@ -199,8 +199,8 @@ struct PlayMode : Mode {
 		Sprite* reticle;
 		Sprite* controlReticle;
 
-		float health = 200.f;
-		float maxHealth = 200.f;
+		float health = 250.f;
+		float maxHealth = 250.f;
 		int meleeHitInvince = 45;
 		int meleeHitInvinceTimer = 0;
 
@@ -255,8 +255,20 @@ struct PlayMode : Mode {
 	Text text;
 	Sprite* textbox;
 	Dialogue prologue;
+	void drawTextbox(std::string textStr, GLuint tex);
 
-	void drawTextbox(std::string textStr);
+	bool pauseMode = false; //Affects game code, can be used for more than just dialogue mode
+	Dialogue* curDisplay; //Sets which Dialogue should be drawn atm
+	bool dialogueDisplay = false; //Whether the text itself should be drawn
+	void displayDialogue();
+	void toggleTextBox() {
+		textBoxDisplay = !textBoxDisplay;
+	}
+	bool textBoxDisplay = true;
+
+	bool continueGame = false;
+	bool dialogueStart = false;
+
 
 };
 

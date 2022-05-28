@@ -142,6 +142,7 @@ GAME_NAMES =
 	PlayMode
 	main
 	LitColorTextureProgram
+	QuadTextureProgram
 	#ColorTextureProgram #not used right now, but you might want it
 	Sound
 	load_wav

@@ -120,6 +120,18 @@ struct Scene {
 		} pipeline;
 	};
 
+	struct QuadPipeline {
+
+		GLuint program = 0; //shader program; passed to glUseProgram
+		//texture objects to bind for the first TextureCount textures:
+		GLuint texture = 0;
+		GLuint TEX = -1U;
+		GLenum target = GL_TEXTURE_2D;
+
+		GLuint position = -1U;
+		GLuint texcoord = -1U;
+	} quadPipeline;
+
 	struct Camera {
 		//a 'Camera' attaches camera data to a transform:
 		Camera(Transform *transform_) : transform(transform_) { assert(transform); }
@@ -166,6 +178,9 @@ struct Scene {
 
 	//Scenes in this game also have a fancy library of sprites so I only load animations once. 
 	std::unordered_map<std::string, Sprite> spriteLib;
+
+	//Draw a fullscreen textured quad
+	void drawQuad() const;
 
 	//The "draw" function provides a convenient way to pass all the things in a scene to OpenGL:
 	void draw(Camera const& camera) const;
