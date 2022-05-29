@@ -20,6 +20,9 @@
 #include "Dialogue.hpp"
 #define PI_F 3.1415926f
 
+#define C_NUM_LINES 130
+#define C_MAX_PER_LINE 400/90
+
 
 //Global screen width and height
 inline int screenW = 0;
@@ -58,6 +61,21 @@ struct PlayMode : Mode {
 	float spriteVelocityPlayer = 5.0f;
 	float spriteVelocityReticle = 13.5;
 	glm::vec2 cursorPos; //0,0 top left
+	
+	
+	//Clouds:
+	std::vector<Sprite> cloudLib;
+	std::list<Sprite> clouds;
+	int maxClouds = 300;
+	int curClouds = 0;
+	const int numLines = C_NUM_LINES;
+	const int maxCloudsPerLine = C_MAX_PER_LINE;
+	float maxCloudZ = 5.f;
+	float minCloudZ = -100.f;
+	float minCloudX = -18.f;
+	float maxCloudX = 18.f;
+	float cloudSpeed = 2.f *(105.f)/((float) C_NUM_LINES);
+	void updateClouds();
 
 		//Projectiles
 		void createProjectileMech(int type, glm::vec3 motionVec, glm::vec3 playerPos);
@@ -175,6 +193,8 @@ struct PlayMode : Mode {
 
 		bool bossJebbDefeated = false;
 		bool bossJebbSpawned = false;
+		bool bossDarkDefeated = false;
+		bool bossDarkSpawned = false;
 
 	//Meshes:
 	bool bboxIntersect(BBoxStruct object, BBoxStruct stationary); //Intersect bboxes and return true if collision
@@ -255,19 +275,33 @@ struct PlayMode : Mode {
 	Text text;
 	Sprite* textbox;
 	Dialogue prologue;
-	void drawTextbox(std::string textStr, GLuint tex);
+	void drawTextbox(std::string textStr, GLuint bgTex, GLuint portTex);
 
-	bool pauseMode = false; //Affects game code, can be used for more than just dialogue mode
 	Dialogue* curDisplay; //Sets which Dialogue should be drawn atm
-	bool dialogueDisplay = false; //Whether the text itself should be drawn
+	bool isdialogueDisplay = false; //Whether the text itself should be drawn
 	void displayDialogue();
 	void toggleTextBox() {
 		textBoxDisplay = !textBoxDisplay;
 	}
 	bool textBoxDisplay = true;
 
-	bool continueGame = false;
+	//Game logic
+	bool pauseMode = false; //Affects game code, can be used for more than just dialogue mode
+	bool fullscreen = true;
+	enum gameplaystage
+	{
+		gs_init, gs_prologue, gs_level, gs_preboss, gs_boss, gs_postboss, gs_predark, gs_dark, gs_postdark
+	};
+	int currentstage = gameplaystage::gs_init;
+	void updatestage(float elapsed);
 	bool dialogueStart = false;
+	bool dialogueEnd = false;
+	bool continueGame = false;
+	float bosstime = 0.f;
+	float highscore = 200.f;
+
+	//Misc
+	glm::vec3 offsetPlayerPos = glm::vec3(0.f);
 
 
 };

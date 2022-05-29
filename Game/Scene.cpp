@@ -96,9 +96,13 @@ glm::mat4 Scene::Camera::make_projection() const {
 //-------------------------
 
 
-void Scene::drawQuad() const {
+void Scene::drawQuad(glm::vec2 drawPos, glm::vec2 drawSize) const {
 	GLuint vao = 0;
 	GLuint vbo = 0;
+	GL_ERRORS();
+	glEnable(GL_BLEND);
+	GL_ERRORS();
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 
 	glUseProgram(quad_texture_program_pipeline.program);
@@ -119,12 +123,14 @@ void Scene::drawQuad() const {
 
 	//Create quad
 	std::array<Quadtex, 6> vertices;
-	vertices[0].Position = glm::vec4(-1.f, 0.f, 1.f, 1.0f);
-	vertices[1].Position = glm::vec4(-1.f, 0.f, -1.f, 1.0f);
-	vertices[2].Position = glm::vec4(1.f, 0.f, -1.f, 1.0f);
-	vertices[3].Position = glm::vec4(-1.f, 0.f, 1.f, 1.0f);
-	vertices[4].Position = glm::vec4(1.f, 0.f, -1.f, 1.0f);
-	vertices[5].Position = glm::vec4(1.f, 0.f, 1.f, 1.0f);
+	float lowX = drawPos.x; float lowY = drawPos.y;
+	float highX = lowX + drawSize.x; float highY = lowY + drawSize.y;
+	vertices[0].Position = glm::vec4(lowX, highY, 0.f, 1.0f);
+	vertices[1].Position = glm::vec4(lowX, lowY, 0.f, 1.0f);
+	vertices[2].Position = glm::vec4(highX, lowY, 0.f, 1.0f);
+	vertices[3].Position = glm::vec4(lowX, highY, 0.f, 1.0f);
+	vertices[4].Position = glm::vec4(highX, lowY, 0.f, 1.0f);
+	vertices[5].Position = glm::vec4(highX, highY, 0.f, 1.0f);
 	vertices[0].TexCoord = glm::vec2(0.0f, 0.0f);
 	vertices[1].TexCoord = glm::vec2(0.0f, 1.0f);
 	vertices[2].TexCoord = glm::vec2(1.0f, 1.0f);
@@ -133,6 +139,7 @@ void Scene::drawQuad() const {
 	vertices[5].TexCoord = glm::vec2(1.0f, 0.0f);
 	
 	if ( quad_texture_program_pipeline.position != -1U &&  quad_texture_program_pipeline.texcoord != -1U) {
+		glUseProgram(quad_texture_program_pipeline.program);
 		GL_ERRORS();
 		glGenVertexArrays(1, &vao);
 		GL_ERRORS();
@@ -153,6 +160,14 @@ void Scene::drawQuad() const {
 		glVertexAttribPointer(quad_texture_program_pipeline.texcoord, 2, GL_FLOAT, GL_FALSE, sizeof(Quadtex), (void*)(4 * sizeof(float)));
 		GL_ERRORS();
 
+		glUseProgram(quad_texture_program_pipeline.program);
+
+		glValidateProgram(quad_texture_program_pipeline.program);
+		GLint res;
+		glGetProgramiv(quad_texture_program_pipeline.program, GL_VALIDATE_STATUS, &res);
+		assert(res == GL_TRUE);
+
+		glBindVertexArray(vao);
 
 		
 		glDisable(GL_DEPTH_TEST);
@@ -195,6 +210,10 @@ void Scene::draw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_lig
 
 	//Iterate through all drawables, sending each one to OpenGL:
 	for (auto const& drawable : drawables) {
+		GL_ERRORS();
+		glEnable(GL_BLEND);
+		GL_ERRORS();
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		//Reference to drawable's s for convenience:
 		Scene::Drawable::Pipeline const& pipeline = drawable.pipeline;
 
@@ -326,14 +345,14 @@ void Scene::draw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_lig
 }
 
 
-void Scene::spriteDraw(Camera const& camera, bool proj, bool play, bool box) {
+void Scene::spriteDraw(Camera const& camera, bool proj, bool play, bool box, bool cloud) {
 	assert(camera.transform);
 	glm::mat4 world_to_clip = camera.make_projection() * glm::mat4(camera.transform->make_world_to_local());
 	glm::mat4x3 world_to_light = glm::mat4x3(1.0f);
-	spriteDraw(world_to_clip, world_to_light, proj, play, box);
+	spriteDraw(world_to_clip, world_to_light, proj, play, box, cloud);
 }
 
-void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light, bool proj, bool play, bool box) {
+void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light, bool proj, bool play, bool box, bool cloud) {
 
 
 	//Create sprite draw program
@@ -341,10 +360,6 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 	GLuint vbo = 0;
 	GLuint program = spriteProgram; //shader program; passed to glUseProgram
 	
-	GL_ERRORS();
-	glEnable(GL_BLEND);
-	GL_ERRORS();
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	//Iterate through all sprites uodate their animations and draw the current frame
 	for (std::list<Sprite>::iterator spriteIterator = sprites.begin(); spriteIterator != sprites.end(); spriteIterator++) {
@@ -356,6 +371,8 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		if (sprite.name.substr(0, 6) != std::string("player") && play) continue;
 		if (sprite.name.substr(0, 7) == std::string("textbox") && !box) continue;
 		if (sprite.name.substr(0, 7) != std::string("textbox") && box) continue;
+		if (sprite.name.substr(0, 5) == std::string("cloud") && !cloud) continue;
+		if (sprite.name.substr(0, 5) != std::string("cloud") && cloud) continue;
 		if (!sprite.doDraw) continue;
 
 		//Reference to sprite's pipeline for convenience:

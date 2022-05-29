@@ -18,6 +18,7 @@
 #include <random>
 #include <string>
 #include "Text.hpp"
+#include <array>
 
 #define AVOID_RECOLLIDE_OFFSET 0.05f
 #define DEATH_LAYER -10.0f
@@ -157,6 +158,15 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		textboxSprite.width = 3840; textboxSprite.height = 2160;
 		scene.spriteLib["textbox"] = textboxSprite;
 
+		Sprite cloud1;
+		cloud1.pipeline = lit_color_texture_program_sprite_pipeline;
+		cloud1.pipeline.animations = new std::unordered_map < std::string, Sprite::SpriteAnimation > ();
+		cloud1.addAnimation("/Sources/Animations/ANIMATE_cloud1.txt");
+		cloud1.pipeline.setAnimation("cloud1");
+		cloud1.pipeline.defaultAnimation = (*cloud1.pipeline.animations)["cloud1"];
+		cloud1.width = 128; cloud1.height = 64;
+		cloud1.size = glm::vec2(0.7f);
+		scene.spriteLib["cloud1"] = cloud1;
 	}
 
 
@@ -352,10 +362,81 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	bossJebb.path.push_back(std::make_pair(30, glm::vec2(-xOffsetJebb, 0.f)));
 	bossJebb.shotOffset = glm::vec2(0.f);
 
+	bossDark.health = 2000.f;
+	bossDark.shotCooldown = 10;
+	bossDark.enemyCooldown = 500;
+	bossDark.projType = Projectile::PROJ_RapidEnemy;
+	//TEMP SPRITE:
+	bossDark.sprite = scene.spriteLib["boss"];
+	bossDark.sprite.name = "enemyDark";
+	bossDark.type = Enemy::BOSS_Dark;
+	bossDark.path = std::vector<std::pair<int, glm::vec2>>();
+	bossDark.path.push_back(std::make_pair(20, glm::vec2(0.f)));
+	bossDark.path.push_back(std::make_pair(20, glm::vec2(0.f)));
+	float xOffsetDark = 8.5f;
+	bossDark.path.push_back(std::make_pair(20, glm::vec2(xOffsetDark, 0.f)));
+	bossDark.path.push_back(std::make_pair(20, glm::vec2(xOffsetDark, 0.f)));
+	bossDark.path.push_back(std::make_pair(30, glm::vec2(xOffsetDark, xOffsetDark / 2.f)));
+	bossDark.path.push_back(std::make_pair(20, glm::vec2(-xOffsetDark, xOffsetDark / 2.f)));
+	bossDark.path.push_back(std::make_pair(20, glm::vec2(-xOffsetDark, 0.f)));
+	bossDark.path.push_back(std::make_pair(20, glm::vec2(-xOffsetDark, 0.f)));
+	bossDark.shotOffset = glm::vec2(0.f);
+
 	
 	//All other information defined in updateAllEnemies
 	//All spawning to be handled in draw
 
+	//Clouds
+	cloudLib = std::vector<Sprite>();
+	clouds = std::list<Sprite>();
+
+	//Add all cloud sprites to lib vector
+	Sprite newCloud = scene.spriteLib["cloud1"];
+	newCloud.name = "cloud1";
+	cloudLib.push_back(newCloud);
+
+	//Initalize clouds
+	std::array<std::array<bool,C_MAX_PER_LINE>,C_NUM_LINES> cloudMatrix;
+	std::array<int,C_NUM_LINES> matrixFill;
+	std::array<std::vector<int>, C_NUM_LINES> cloudMatrixInd;
+	for (int c = 0; c < C_NUM_LINES; c++) {
+		matrixFill[c] = 0;
+		for (int cc = 0; cc < C_MAX_PER_LINE; cc++) {
+			cloudMatrix[c][cc] = false;
+		}
+		cloudMatrixInd[c] = std::vector<int>();
+	}
+	while (curClouds < maxClouds) {
+		curClouds++;
+		int lineIndex = rand() % C_NUM_LINES;
+		while (matrixFill[lineIndex] + 1 >= C_MAX_PER_LINE) {
+			lineIndex++;
+			if (lineIndex >= C_NUM_LINES) lineIndex = 0;
+		}
+		matrixFill[lineIndex]++;
+		int cloudIndex = rand() % C_MAX_PER_LINE;
+		while (cloudMatrix[lineIndex][cloudIndex]) {
+			cloudIndex++;
+			if (cloudIndex >= maxCloudsPerLine) cloudIndex = 0;
+		}
+		cloudMatrix[lineIndex][cloudIndex] = true;
+		cloudMatrixInd[lineIndex].push_back(cloudIndex);
+
+		
+	}
+
+	for (int i = (int) cloudMatrixInd.size() - 1; i >= 0; i--) {
+		for (int jl = 0; jl < (int)cloudMatrixInd[i].size(); jl++) {
+			int j = cloudMatrixInd[i][jl];
+				float xPercentage = (float)j / float(C_MAX_PER_LINE);
+				float zPercentage = (float)i / float(C_NUM_LINES);
+				glm::vec3 inCamPos = glm::vec3((maxCloudX - minCloudX) * xPercentage + minCloudX, 0.f, (maxCloudZ - minCloudZ) * zPercentage + minCloudZ + xPercentage*2.f) ;
+				Sprite newCloud = cloudLib[rand() % cloudLib.size()];
+				newCloud.pos = camera->transform->make_local_to_world() * glm::vec4(inCamPos, 1.f);
+				newCloud.pos.z = -2.f;
+				clouds.push_back(newCloud);
+		}
+	}
 
 
 	//start music loop playing:
@@ -378,6 +459,7 @@ void PlayMode::updateAllEnemies() {
 		if (iter->alive == false)
 			if (iter->framesToDeath <= 0) {
 				if (iter->type == iter->BOSS_Jebb) bossJebbDefeated = true;
+				else if (iter->type == iter->BOSS_Dark) bossDarkDefeated = true;
 				toDespawn.push_back(iter);
 			}
 			else {
@@ -500,7 +582,7 @@ void PlayMode::updateAllEnemies() {
 						if (iter->meleeTimer == 0) { //Initialize attack
 							iter->startPos = iter->sprite.pos;
 							iter->inMelee = true;
-							iter->targetPos = mech.playerSprite->pos + glm::vec3(0.f, 0.5f, 0.0f);
+							iter->targetPos = offsetPlayerPos;// +glm::vec3(0.f, 0.5f, 0.0f);
 						}
 						if (iter->meleeTimer < iter->toPlayerTime) { //First phase. Move towards players init position
 							iter->sprite.pos = (iter->targetPos - iter->startPos) * ((float)iter->meleeTimer / iter->toPlayerTime) + iter->startPos;
@@ -547,7 +629,7 @@ void PlayMode::updateAllEnemies() {
 							Projectile newProj = genericProjectile1;
 							newProj.type = Projectile::PROJ_SlowEnemy;
 							newProj.projSprite.pos = iter->sprite.pos;
-							newProj.motionVector = normalize(enemProjSpeed*normalize(mech.playerSprite->pos + glm::vec3(0.4f) - iter->sprite.pos));
+							newProj.motionVector = normalize(enemProjSpeed*normalize(offsetPlayerPos + glm::vec3(0.4f) - iter->sprite.pos));
 							projectiles.push_back(newProj);
 							iter->shotTimer = 0;
 						}
@@ -587,7 +669,49 @@ void PlayMode::updateAllEnemies() {
 							enemies.push_back(newEnemy);
 
 						}
-						else{
+						else {
+							Enemy newEnemy = envocronRangedPilot;
+							newEnemy.initPos = mech.playerSprite->pos + camera->transform->rotation * glm::vec3(2.f, 1.f, -20.f);
+							newEnemy.segment = 0;
+							newEnemy.framesInSegment = newEnemy.path[0].first;
+							enemies.push_back(newEnemy);
+						}
+					}
+					break;
+				case(Enemy::BOSS_Dark):
+					iter->shotTimer++;
+					iter->enemyTimer++;
+					if (iter->shotTimer == iter->shotCooldown) { //Create 2 rapid projectiles in direction of player
+						Projectile newProj = genericProjectile1;
+						newProj.projSprite.pipeline.setAnimation("projectileEnRapid");
+						newProj.type = Projectile::PROJ_RapidEnemy;
+						newProj.projSprite.pos = iter->sprite.pos;
+						newProj.motionVector = normalize(enemProjSpeed * normalize(mech.playerSprite->pos + glm::vec3(0.4f) - iter->sprite.pos));
+						projectiles.push_back(newProj);
+						newProj.projSprite.pos = iter->sprite.pos + camera->transform->rotation * glm::vec3(iter->sprite.width * iter->sprite.size.x / SPRITE_SCALE, 0.f, 0.f);
+						newProj.motionVector = normalize(enemProjSpeed * normalize(mech.playerSprite->pos + glm::vec3(0.4f) - newProj.projSprite.pos));
+						projectiles.push_back(newProj);
+						iter->shotTimer = 0;
+					}
+					if (iter->enemyTimer == iter->enemyCooldown) { //randomly create satillite enemy
+						iter->enemyTimer = 0;
+						float randomEnemy = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+						if (randomEnemy < 0.3f) {
+							Enemy newEnemy = grazaloidJet;
+							newEnemy.initPos = mech.playerSprite->pos + camera->transform->rotation * glm::vec3(-2.f, 0.f, -20.f);
+							newEnemy.segment = 0;
+							newEnemy.framesInSegment = newEnemy.path[0].first;
+							enemies.push_back(newEnemy);
+						}
+						else if (randomEnemy < 0.6f) {
+							Enemy newEnemy = envocronMeleePilot;
+							newEnemy.initPos = mech.playerSprite->pos + camera->transform->rotation * glm::vec3(2.f, 0.f, -20.f);
+							newEnemy.segment = 0;
+							newEnemy.framesInSegment = newEnemy.path[0].first;
+							enemies.push_back(newEnemy);
+
+						}
+						else {
 							Enemy newEnemy = envocronRangedPilot;
 							newEnemy.initPos = mech.playerSprite->pos + camera->transform->rotation * glm::vec3(2.f, 1.f, -20.f);
 							newEnemy.segment = 0;
@@ -658,18 +782,6 @@ void PlayMode::spawnEnemies() { //Spawn all enemies that are within spawnDist di
 		}
 		else stillSpawn = false;
 	}
-	if (level.bossCheck() && !bossJebbSpawned && !continueGame) {
-		curDisplay = &prologue;
-		displayDialogue();
-	}
-	else if (level.bossCheck() && !bossJebbSpawned && continueGame) {
-		bossJebbSpawned = true;
-		Enemy newEnemy = bossJebb;
-		newEnemy.initPos = mech.playerSprite->pos + camera->transform->rotation*glm::vec3(-bossJebb.sprite.width* bossJebb.sprite.size.x/2.f/SPRITE_SCALE, -bossJebb.sprite.height * bossJebb.sprite.size.y / 2.f / SPRITE_SCALE,-50.f);
-		newEnemy.segment = 0;
-		newEnemy.framesInSegment = newEnemy.path[0].first;
-		enemies.push_back(newEnemy);
-	}
 }
 
 bool PlayMode::bboxIntersect(BBoxStruct object, BBoxStruct stationary) { //Checks that intersection occurs on all 3 axises
@@ -708,16 +820,14 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_a) {
 			left.downs += 1;
-			if (dialogueDisplay && !left.pressed && !curDisplay->atStart()) curDisplay->nextLine();
+			if (isdialogueDisplay && !left.pressed && !curDisplay->atStart()) curDisplay->nextLine();
 			left.pressed = true;
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_d) {
-			if (dialogueDisplay && !right.pressed && curDisplay->atEnd()) {
-				pauseMode = false;
-				dialogueDisplay = false;
-				continueGame = true;
+			if (isdialogueDisplay && !right.pressed && curDisplay->atEnd()) {
+				dialogueEnd = true;
 			}
-			if (dialogueDisplay && !right.pressed) curDisplay->nextLine();
+			if (isdialogueDisplay && !right.pressed) curDisplay->nextLine();
 			right.downs += 1;
 			right.pressed = true;
 			return true;
@@ -740,6 +850,17 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		else if (evt.key.keysym.sym == SDLK_e) {
 			out.downs += 1;
 			out.pressed = true;
+			return true;
+		}
+		else if (evt.key.keysym.sym == SDLK_y) {
+			if (fullscreen) {
+				fullscreen = false;
+				SDL_SetWindowFullscreen(window, 0);
+			}
+			else {
+				fullscreen = true;
+				SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+			}
 			return true;
 		}
 		else if (evt.key.keysym.sym == SDLK_n) {
@@ -779,7 +900,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			return true;
 		}
 		else if (evt.key.keysym.sym == SDLK_t) {
-			if (!T.pressed && dialogueDisplay) toggleTextBox();
+			if (!T.pressed && isdialogueDisplay) toggleTextBox();
 			T.pressed = true;
 			return true;
 		}
@@ -798,7 +919,8 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			down.pressed = false;
 			return true;
 		}
-		else if (evt.key.keysym.sym == SDLK_q) {
+		else if (evt.key.keysym.sym == SDLK_i) {
+			Mode::current = nullptr;
 			in.pressed = false;
 			return true;
 		}
@@ -1163,6 +1285,39 @@ void PlayMode::offsetObjects() {
 	camera->transform->position += level.posOffsetDelta;
 }
 
+void PlayMode::updateClouds() {
+	
+	std::vector<std::list<Sprite>::iterator> despawnClouds = std::vector<std::list<Sprite>::iterator>();
+	glm::vec3 posOffsetDelta = level.curoffset();
+	for (std::list<Sprite>::iterator iter = clouds.begin(); iter != clouds.end(); iter++) {
+		iter->pos += level.posOffsetDelta;
+		glm::vec3 offsetCamera = camera->transform->make_world_to_local() * glm::vec4(iter->pos, 1.f) + glm::vec3(0.f, 0.f, cloudSpeed);
+		iter->pos = camera->transform->make_local_to_world() * glm::vec4(offsetCamera, 1.0f);
+	}
+	bool limitReached = false;
+	std::list<Sprite>::iterator iter = clouds.begin();
+	while (!limitReached) {
+		glm::vec3 offsetCamera = camera->transform->make_world_to_local() * glm::vec4(iter->pos, 1.f);
+		if (offsetCamera.z > maxCloudZ) {
+			float xPercentage = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+			float x = xPercentage * (maxCloudX - minCloudX) + minCloudX;
+			glm::vec3 inCamPos = glm::vec3(x, 0.f, minCloudZ + 2*xPercentage);
+			iter->pos = camera->transform->make_local_to_world() * glm::vec4(inCamPos, 1.f );
+			iter->pos.z = -2;
+			Sprite newCloud = *iter;
+			std::list<Sprite>::iterator delIter = iter;
+			iter++;
+			if (iter == clouds.end()) limitReached = true;
+			clouds.erase(delIter);
+			clouds.push_back(newCloud);
+		}
+		else limitReached = true;
+		if(!limitReached){
+			if (iter == clouds.end()) limitReached = true;
+		}
+	}
+}
+
 void PlayMode::updateMechAnimation() {
 	std::string nextAnimation;
 	switch (horiMovement.currentState)
@@ -1182,17 +1337,132 @@ void PlayMode::updateMechAnimation() {
 }
 
 void PlayMode::displayDialogue() {
-	dialogueDisplay = true;
+	isdialogueDisplay = true;
 	textBoxDisplay = true;
 	while (!curDisplay->atStart()) curDisplay->lastLine();
 	pauseMode = true;
 	dialogueStart = true;
 }
 
+void PlayMode::updatestage(float elapsed){
+	switch (currentstage)
+	{
+	case(gameplaystage::gs_init):
+		if (!dialogueStart) {
+			curDisplay = &prologue;
+			currentstage = gameplaystage::gs_prologue;
+			displayDialogue();
+		}
+		break;
+	case(gameplaystage::gs_prologue):
+		if (dialogueEnd) {
+			dialogueEnd = false;
+			dialogueStart = false;
+			pauseMode = false;
+			isdialogueDisplay = false;
+			continueGame = true;
+			currentstage = gameplaystage::gs_level;
+		}
+		break;
+	case(gameplaystage::gs_level):
+		if (!dialogueStart && level.bossCheck()) {
+			curDisplay = &prologue;
+			currentstage = gameplaystage::gs_preboss;
+			displayDialogue();
+		}
+		break;
+	case(gameplaystage::gs_preboss):
+		if (dialogueEnd && !bossJebbSpawned) {
+			dialogueEnd = false;
+			dialogueStart = false;
+			pauseMode = false;
+			isdialogueDisplay = false;
+			continueGame = true;
+			currentstage = gameplaystage::gs_boss;
+			bossJebbSpawned = true;
+			Enemy newEnemy = bossJebb;
+			newEnemy.initPos = mech.playerSprite->pos + camera->transform->rotation * glm::vec3(-bossJebb.sprite.width * bossJebb.sprite.size.x / 2.f / SPRITE_SCALE, -bossJebb.sprite.height * bossJebb.sprite.size.y / 2.f / SPRITE_SCALE, -50.f);
+			newEnemy.segment = 0;
+			newEnemy.framesInSegment = newEnemy.path[0].first;
+			enemies.push_back(newEnemy);
+		}
+		break;
+	case(gameplaystage::gs_boss):
+		if (bossJebbDefeated) {
+			if (bosstime < highscore) {
+				currentstage = gameplaystage::gs_predark;
+				if (!dialogueStart) {
+					curDisplay = &prologue;
+					displayDialogue();
+				}
+			}
+			else {
+				if (!dialogueStart) {
+					curDisplay = &prologue;
+					currentstage = gameplaystage::gs_postboss;
+					displayDialogue();
+				}
+			}
+		}
+		else bosstime += elapsed;
+		break;
+	case(gameplaystage::gs_postboss):
+		if (dialogueEnd) {
+			dialogueEnd = false;
+			dialogueStart = false;
+			win = true;
+			isdialogueDisplay = false;
+		}
+		break;
+
+	case(gameplaystage::gs_predark):
+		if (dialogueEnd && !bossDarkSpawned) {
+			dialogueEnd = false;
+			dialogueStart = false;
+			pauseMode = false;
+			isdialogueDisplay = false;
+			continueGame = true;
+			currentstage = gameplaystage::gs_dark;
+			bossDarkSpawned = true;
+			Enemy newEnemy = bossDark;
+			mech.health = mech.maxHealth;
+			newEnemy.initPos = mech.playerSprite->pos + camera->transform->rotation * glm::vec3(-bossDark.sprite.width * bossDark.sprite.size.x / 2.f / SPRITE_SCALE, -bossDark.sprite.height * bossDark.sprite.size.y / 2.f / SPRITE_SCALE, -50.f);
+			newEnemy.segment = 0;
+			newEnemy.framesInSegment = newEnemy.path[0].first;
+			enemies.push_back(newEnemy);
+		}
+		break;
+	case(gameplaystage::gs_dark):
+		if (bossDarkDefeated) {
+			
+			if (!dialogueStart) {
+				curDisplay = &prologue;
+				currentstage = gameplaystage::gs_postdark;
+				displayDialogue();
+			}
+		}
+		else bosstime += elapsed;
+		break;
+	case(gameplaystage::gs_postdark):
+		if (dialogueEnd) {
+			dialogueEnd = false;
+			dialogueStart = false;
+			win = true;
+			isdialogueDisplay = false;
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 void PlayMode::update(float elapsed) {
 
 
+
 	if (!win && mech.health > 0.f) {
+
+		updatestage(elapsed);
 
 		//Get mouse info
 		int x, y;
@@ -1202,6 +1472,7 @@ void PlayMode::update(float elapsed) {
 		//Update level
 		if (!level.bossCheck() && !pauseMode)level.update(elapsed);
 		if(!level.bossCheck() && !pauseMode) offsetObjects();
+		updateClouds();
 
 		if (level.bossCheck() && !dialogueStart) continueGame = false;
 
@@ -1287,6 +1558,7 @@ void PlayMode::update(float elapsed) {
 		playerCamDepth = -playerCamPos.z;
 		maxHeight = tan(camera->fovy) * playerCamDepth / 2.f;
 		minHeight = -maxHeight;
+		maxHeight += 0.4f;
 		maxWidth = camera->aspect * maxHeight;
 		minWidth = camera->aspect * minHeight;
 		playerCamHeight = playerCamPos.y;
@@ -1362,6 +1634,8 @@ void PlayMode::update(float elapsed) {
 		if (!pauseMode && playerCamHeight + mech.playerSprite->size.y * mech.playerSprite->height / SPRITE_SCALE < 0.85f * maxHeight) mech.reticle->pos = mech.playerSprite->pos + newTransform.rotation * glm::vec3((float)mech.playerSprite->width / SPRITE_SCALE / 8.f, 0.f, 1.13f);
 		else if (!pauseMode) mech.reticle->pos = mech.playerSprite->pos + newTransform.rotation * glm::vec3((float)mech.playerSprite->width / SPRITE_SCALE / 8.f, 0.001f, 0.0f);
 
+		offsetPlayerPos = mech.playerSprite->pos + newTransform.rotation* glm::vec3(
+			mech.playerSprite->size * glm::vec2(mech.playerSprite->width, mech.playerSprite->height) / SPRITE_SCALE / 4.f, 0.f);
 
 
 		if (!pauseMode) {
@@ -1374,7 +1648,7 @@ void PlayMode::update(float elapsed) {
 			else if (melee.pressed && mech.meleeTimer == 0 && melee.unpressed) {
 				melee.unpressed = false;
 				mech.meleeTimer = mech.meleeTime;
-				createProjectileMech(Projectile::PROJ_Melee, glm::vec3(0.f), mech.playerSprite->pos);
+				createProjectileMech(Projectile::PROJ_Melee, glm::vec3(0.f), offsetPlayerPos);
 			}
 			//Projectiles:
 			if (leftFiredCooldown == 0 && leftfire.pressed && mech.meleeTimer == 0) {
@@ -1431,7 +1705,6 @@ void PlayMode::update(float elapsed) {
 		right.downs = 0;
 		up.downs = 0;
 		down.downs = 0;
-		win = bossJebbDefeated;
 	}
 	else if (win) {
 		std::cout << "Win!\n";
@@ -1441,12 +1714,16 @@ void PlayMode::update(float elapsed) {
 	}
 }
 
-void PlayMode::drawTextbox(std::string textStr, GLuint tex) {
-	quad_texture_program_pipeline.texture = tex;
+void PlayMode::drawTextbox(std::string textStr, GLuint bgTex, GLuint portTex) {
+	quad_texture_program_pipeline.texture = bgTex;
 	scene.drawQuad();
-	scene.spriteDraw(*camera, false, false, true);
-	text.textColor = glm::vec3(1.f);
-	if(textBoxDisplay) text.displayText(textStr, 0, glm::vec2(-0.55f, -.6f), glm::vec2(1.2f,0.4f), 0.0016f);
+	if (textBoxDisplay) {
+		scene.spriteDraw(*camera, false, false, true);
+		text.textColor = glm::vec3(1.f);
+		text.displayText(textStr, 0, glm::vec2(-0.55f, -.6f), glm::vec2(1.2f, 0.4f), 0.0016f);
+		quad_texture_program_pipeline.texture = portTex;
+		scene.drawQuad(glm::vec2(-0.9f,-.995f),glm::vec2(0.3f,0.3f*16.f/10.f));
+	}
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
@@ -1461,6 +1738,11 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	for (auto& enemy : enemies) {
 		enemy.sprite.pipeline.updateAnimation();
 		scene.sprites.push_back(enemy.sprite);
+	}
+	for (auto& cloud = clouds.end(); cloud != clouds.begin(); cloud--) {
+		if (cloud == clouds.end()) cloud--;
+		cloud->pipeline.updateAnimation();
+		scene.sprites.push_back(*cloud);
 	}
 
 
@@ -1544,7 +1826,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	GL_ERRORS();
 	scene.spriteDraw(*camera,true,false,false);
 	scene.spriteDraw(*camera, false,false,false);
-	scene.spriteDraw(*camera, false,true,false);
+	scene.spriteDraw(*camera, false, false, false, true);
+	scene.spriteDraw(*camera, false, true, false);
 	GL_ERRORS();
 
 	
@@ -1561,13 +1844,16 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		if (spriteIt->name.size() > 5 && spriteIt->name.substr(0, 5) == "enemy") {
 			deleteVec.push_back(spriteIt);
 		}
+		if (spriteIt->name.size() >= 5 && spriteIt->name.substr(0, 5) == "cloud") {
+			deleteVec.push_back(spriteIt);
+		}
 	}
 	for (int deleteInd = 0; deleteInd < deleteVec.size(); deleteInd++) {
 		scene.sprites.erase(deleteVec[deleteInd]);
 	}
 	deleteVec.clear();
 
-	if(dialogueDisplay) drawTextbox(curDisplay->currentTex(), curDisplay->currentBG().first);
+	if(isdialogueDisplay) drawTextbox(curDisplay->currentTex(), curDisplay->currentBG().first, curDisplay->currentPortrait().first);
 	
 
 	float healthPercentage = (float)((int)(mech.health / mech.maxHealth * 1000.f)) / 10.f;
@@ -1575,9 +1861,15 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	else text.textColor = glm::vec3(0.3f, 1.f, 0.6f);
 	std::string healthString;
 	if(healthPercentage == 100.f) healthString = std::string("Health: ").append(std::to_string(healthPercentage).substr(0,3)).append(" %");
-	else healthString = std::string("Health: ").append(std::to_string(healthPercentage).substr(0, 4)).append("%");
-	text.displayText(healthString, 0, glm::vec2(-.9f, 0.9f), glm::vec2(0.5f, 0.2f), 0.0016f);
- }
+	else healthString = std::string("Health: ").append(std::to_string(healthPercentage).substr(0, 4)).append("% (y toggles fullscreen, i quits)");
+	if (!isdialogueDisplay)text.displayText(healthString, 0, glm::vec2(-.95f, 0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
+	std::string yourTime = std::to_string((float)((int)(bosstime * 1000.f)) / 1000.f);
+	std::string highTime = std::to_string((float)((int)(highscore * 1000.f)) / 1000.f);
+
+	text.textColor = glm::vec3(0.3f, 1.f, 0.6f);
+	if (!isdialogueDisplay && bossJebbSpawned)text.displayText(yourTime, 0, glm::vec2(-.95f, -0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
+	if (!isdialogueDisplay && bossJebbSpawned)text.displayText(highTime, 0, glm::vec2(.85, -0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
+}
 
 glm::vec3 PlayMode::get_player_position() {
 	//the vertex position here was read from the model in blender:
