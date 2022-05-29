@@ -345,21 +345,21 @@ void Scene::draw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_lig
 }
 
 
-void Scene::spriteDraw(Camera const& camera, bool proj, bool play, bool box, bool cloud) {
+void Scene::spriteDraw(Camera const& camera, bool proj, bool play, bool box) {
 	assert(camera.transform);
 	glm::mat4 world_to_clip = camera.make_projection() * glm::mat4(camera.transform->make_world_to_local());
 	glm::mat4x3 world_to_light = glm::mat4x3(1.0f);
-	spriteDraw(world_to_clip, world_to_light, proj, play, box, cloud);
+	spriteDraw(world_to_clip, world_to_light, proj, play, box);
 }
 
-void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light, bool proj, bool play, bool box, bool cloud) {
+void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light, bool proj, bool play, bool box) {
 
 
 	//Create sprite draw program
 	GLuint vao = 0;
 	GLuint vbo = 0;
 	GLuint program = spriteProgram; //shader program; passed to glUseProgram
-	
+
 
 	//Iterate through all sprites uodate their animations and draw the current frame
 	for (std::list<Sprite>::iterator spriteIterator = sprites.begin(); spriteIterator != sprites.end(); spriteIterator++) {
@@ -371,8 +371,7 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		if (sprite.name.substr(0, 6) != std::string("player") && play) continue;
 		if (sprite.name.substr(0, 7) == std::string("textbox") && !box) continue;
 		if (sprite.name.substr(0, 7) != std::string("textbox") && box) continue;
-		if (sprite.name.substr(0, 5) == std::string("cloud") && !cloud) continue;
-		if (sprite.name.substr(0, 5) != std::string("cloud") && cloud) continue;
+		if (sprite.name.substr(0, 5) == std::string("cloud")) continue;
 		if (!sprite.doDraw) continue;
 
 		//Reference to sprite's pipeline for convenience:
@@ -380,14 +379,15 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		Sprite::Pipeline pipeline = sprite.pipeline;
 
 
+
 		//Create quad at pos of sprite width and height
-		float width = (float)sprite.width/SPRITE_SCALE*sprite.size.x;
-		float height = (float)sprite.height/SPRITE_SCALE * sprite.size.y;
+		float width = (float)sprite.width / SPRITE_SCALE * sprite.size.x;
+		float height = (float)sprite.height / SPRITE_SCALE * sprite.size.y;
 		std::array<Vertex, 6> vertices;
 		glm::vec4 quadColor = glm::vec4(1.0f);
 		if (pipeline.hitTimer > 0) {
 			float percentage = (float)pipeline.hitTimer / (float)pipeline.hitTime;
-			if(!play) quadColor = glm::vec4(1.0f, percentage * 0.5f + 0.5f, percentage * 0.5f + 0.5f, 1.0f);
+			if (!play) quadColor = glm::vec4(1.0f, percentage * 0.5f + 0.5f, percentage * 0.5f + 0.5f, 1.0f);
 			else quadColor = glm::vec4(percentage * 0.5f + 0.5f, 1.0f, percentage * 0.5f + 0.5f, 1.0f);
 		}
 
@@ -446,7 +446,7 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		GL_ERRORS();
 		glVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(11 * sizeof(float)));
 		GL_ERRORS();
-		
+
 		Scene::Camera camera = cameras.front();
 		assert(camera.transform);
 		Scene::Transform newTransform;
@@ -455,11 +455,11 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		newTransform.rotation = camera.transform->rotation;
 		newTransform.rotation = glm::normalize(
 			newTransform.rotation
-			* glm::angleAxis(-PI_F/2.f, glm::vec3(1.0f, 0.0f, 0.0f)));
+			* glm::angleAxis(-PI_F / 2.f, glm::vec3(1.0f, 0.0f, 0.0f)));
 		//Set attribute sources:
 		glBindVertexArray(vao);
 		//Configure program uniforms:
-		
+
 		//the object-to-world matrix is used in all three of these uniforms:
 		glm::mat4x3 object_to_world = newTransform.make_local_to_world();
 
@@ -494,7 +494,7 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		size_t layerCount = (*sprite.pipeline.animations)[sprite.pipeline.currentAnimation].numLayers;
 		//size_t layerCount = 1;
 		if (pipeline.LAYER_COUNT_uint != -1U) {
-			glUniform1ui(pipeline.LAYER_COUNT_uint, (uint32_t) layerCount);
+			glUniform1ui(pipeline.LAYER_COUNT_uint, (uint32_t)layerCount);
 		}
 		GL_ERRORS();
 
@@ -502,7 +502,7 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		if (pipeline.MATERIAL_TYPE_int_array != -1U) {
 
 			std::vector<int> mats = (*sprite.pipeline.animations)[sprite.pipeline.currentAnimation].getMaterials();
-			glUniform1iv(pipeline.MATERIAL_TYPE_int_array, (uint32_t) layerCount, mats.data());
+			glUniform1iv(pipeline.MATERIAL_TYPE_int_array, (uint32_t)layerCount, mats.data());
 		}
 		GL_ERRORS();
 
@@ -514,7 +514,7 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 
 		//Add light bool
 		if (pipeline.DO_LIGHT_bool != -1U) {
-			glUniform1ui(pipeline.DO_LIGHT_bool,(uint32_t) pipeline.doLight);
+			glUniform1ui(pipeline.DO_LIGHT_bool, (uint32_t)pipeline.doLight);
 		}
 
 
@@ -531,39 +531,252 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		std::vector<int> tempTexLocation;
 		tempTexLocation = std::vector<int>(layerCount);
 		//set up textures:
-		for (uint32_t i = 0; i <layerCount; ++i) {
-				glActiveTexture(GL_TEXTURE0 + i);
-				glBindTexture((*pipeline.animations)[pipeline.currentAnimation].layers[i].textures[pipeline.currentFrame].target, (*pipeline.animations)[pipeline.currentAnimation].layers[i].textures[pipeline.currentFrame].texture);
-				tempTexLocation[i] = i;
+		for (uint32_t i = 0; i < layerCount; ++i) {
+			glActiveTexture(GL_TEXTURE0 + i);
+			glBindTexture((*pipeline.animations)[pipeline.currentAnimation].layers[i].textures[pipeline.currentFrame].target, (*pipeline.animations)[pipeline.currentAnimation].layers[i].textures[pipeline.currentFrame].texture);
+			tempTexLocation[i] = i;
 		}
 		GL_ERRORS();
 		glUniform1iv(glGetUniformLocation(program, "TEX_ARR"), (uint32_t)layerCount, tempTexLocation.data());
 
 		GL_ERRORS();
 
-		if(pipeline.isGui)
+		if (pipeline.isGui)
 			glDisable(GL_DEPTH_TEST);
 
+
+		GL_ERRORS();
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		glEnable(GL_DEPTH_TEST);
-
 		GL_ERRORS();
-		
-		
+
+
 		//un-bind textures:
 		for (uint32_t i = 0; i < layerCount; ++i) {
-				glActiveTexture(GL_TEXTURE0 + i);
-				glBindTexture((*pipeline.animations)[pipeline.currentAnimation].layers[i].textures[pipeline.currentFrame].target, 0);
+			glActiveTexture(GL_TEXTURE0 + i);
+			glBindTexture((*pipeline.animations)[pipeline.currentAnimation].layers[i].textures[pipeline.currentFrame].target, 0);
 		}
 		glActiveTexture(GL_TEXTURE0);
-		
+
 		glUseProgram(0);
 		glBindVertexArray(0);
 		glDeleteVertexArrays(1, &vao);
 		glDeleteBuffers(1, &vbo);
-		
+
 	}
+
+	GL_ERRORS();
+}
+
+
+void Scene::cloudDraw(Camera const& camera)  {
+	assert(camera.transform);
+	glm::mat4 world_to_clip = camera.make_projection() * glm::mat4(camera.transform->make_world_to_local());
+	glm::mat4x3 world_to_light = glm::mat4x3(1.0f);
+	cloudDraw(world_to_clip, world_to_light);
+}
+
+void Scene::cloudDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light) {
+
+
+	//Create sprite draw program
+	GLuint vao = 0;
+	GLuint vbo = 0;
+	GLuint program = spriteProgram; //shader program; passed to glUseProgram
+
+	std::array<Vertex,6*HIGHEST_MAX_CLOUDS> verticesFull;
+	int cloudSoFar = 0;
+
+	//Iterate through all sprites uodate their animations and draw the current frame
+	Sprite::Pipeline pipeline;
+	for (std::list<Sprite>::iterator spriteIterator = sprites.begin(); spriteIterator != sprites.end(); spriteIterator++) {
+		Sprite sprite = *spriteIterator;
+		//printf("Entered sprite draw\n");
+		if (sprite.name.substr(0, 5) != std::string("cloud")) continue;
+		//Reference to sprite's pipeline for convenience:
+		spriteIterator->pipeline.updateAnimation();
+		pipeline = sprite.pipeline;
+
+
+
+		//Create quad at pos of sprite width and height
+		float width = (float)sprite.width / SPRITE_SCALE * sprite.size.x;
+		float height = (float)sprite.height / SPRITE_SCALE * sprite.size.y;
+		std::array<Vertex, 6> vertices;
+		glm::vec4 quadColor = glm::vec4(1.0f);
+
+		vertices[0].Position = glm::vec4(sprite.pos,0.f) +  glm::vec4(0.f, 0.f, height, 1.0f);
+		vertices[1].Position = glm::vec4(sprite.pos, 0.f) + glm::vec4(0.f, 0.f, 0.f, 1.0f);
+		vertices[2].Position = glm::vec4(sprite.pos, 0.f) + glm::vec4(width, 0.f, 0.f, 1.0f);
+		vertices[3].Position = glm::vec4(sprite.pos, 0.f) + glm::vec4(0.f, 0.f, height, 1.0f);
+		vertices[4].Position = glm::vec4(sprite.pos, 0.f) + glm::vec4(width, 0.f, 0.f, 1.0f);
+		vertices[5].Position = glm::vec4(sprite.pos, 0.f) + glm::vec4(width, 0.f, height, 1.0f);
+		for (size_t c = 0; c < 6; c++) {
+			vertices[c].Normal = glm::vec3(0.0f, 0.0f, 1.0f);
+			vertices[c].Color = quadColor;
+		}
+		vertices[0].TexCoord = glm::vec2(0.0f, 0.0f);
+		vertices[1].TexCoord = glm::vec2(0.0f, 1.0f);
+		vertices[2].TexCoord = glm::vec2(1.0f, 1.0f);
+		vertices[3].TexCoord = glm::vec2(0.0f, 0.0f);
+		vertices[4].TexCoord = glm::vec2(1.0f, 1.0f);
+		vertices[5].TexCoord = glm::vec2(1.0f, 0.0f);
+		for (size_t c = 0; c < 6; c++) verticesFull[6*cloudSoFar + c] = (vertices[c]);
+		cloudSoFar++;
+	}
+
+		glUseProgram(program);
+
+
+		GL_ERRORS();
+		glGenVertexArrays(1, &vao);
+		GL_ERRORS();
+		glBindVertexArray(vao);
+		GL_ERRORS();
+		glGenBuffers(1, &vbo); //Creating 1 generic buffer
+		GL_ERRORS();
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		GL_ERRORS();
+		glBufferData(GL_ARRAY_BUFFER, (6*cloudSoFar) * sizeof(Vertex), (void*)verticesFull.data(), GL_DYNAMIC_DRAW);
+		GL_ERRORS();
+		GLint location = glGetAttribLocation(program, "Position");
+		GL_ERRORS();
+		glEnableVertexAttribArray(location);
+		GL_ERRORS();
+		glVertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+		GL_ERRORS();
+		location = glGetAttribLocation(program, "Normal");
+		GL_ERRORS();
+		glEnableVertexAttribArray(location);
+		GL_ERRORS(); //ERRORS FROM 295 to 309
+		glVertexAttribPointer(location, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(4 * sizeof(float)));
+		GL_ERRORS();
+		location = glGetAttribLocation(program, "Color");
+		GL_ERRORS();
+		glEnableVertexAttribArray(location);
+		GL_ERRORS();
+		glVertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(7 * sizeof(float)));
+		GL_ERRORS();
+		location = glGetAttribLocation(program, "TexCoord");
+		GL_ERRORS();
+		glEnableVertexAttribArray(location);
+		GL_ERRORS();
+		glVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(11 * sizeof(float)));
+		GL_ERRORS();
+
+		Scene::Camera camera = cameras.front();
+		assert(camera.transform);
+		Scene::Transform newTransform;
+		//newTransform.parent = camera.transform;=
+		newTransform.rotation = camera.transform->rotation;
+		newTransform.rotation = glm::normalize(
+			newTransform.rotation
+			* glm::angleAxis(-PI_F / 2.f, glm::vec3(1.0f, 0.0f, 0.0f)));
+		//Set attribute sources:
+		glBindVertexArray(vao);
+		//Configure program uniforms:
+
+		//the object-to-world matrix is used in all three of these uniforms:
+		glm::mat4x3 object_to_world = newTransform.make_local_to_world();
+
+
+		glUseProgram(program);
+
+		//OBJECT_TO_CLIP takes vertices from object space to clip space:
+		if (pipeline.OBJECT_TO_CLIP_mat4 != -1U) {
+			glm::mat4 object_to_clip = world_to_clip * glm::mat4(object_to_world);
+			glUniformMatrix4fv(pipeline.OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(object_to_clip));
+		}
+
+		GL_ERRORS();
+		//the object-to-light matrix is used in the next two uniforms:
+		glm::mat4x3 object_to_light = world_to_light * glm::mat4(object_to_world);
+
+		//OBJECT_TO_CLIP takes vertices from object space to light space:
+		if (pipeline.OBJECT_TO_LIGHT_mat4x3 != -1U) {
+			glUniformMatrix4x3fv(pipeline.OBJECT_TO_LIGHT_mat4x3, 1, GL_FALSE, glm::value_ptr(object_to_light));
+		}
+
+		GL_ERRORS();
+		//NORMAL_TO_CLIP takes normals from object space to light space:
+		if (pipeline.NORMAL_TO_LIGHT_mat3 != -1U) {
+			glm::mat3 normal_to_light = glm::inverse(glm::transpose(glm::mat3(object_to_light)));
+			glUniformMatrix3fv(pipeline.NORMAL_TO_LIGHT_mat3, 1, GL_FALSE, glm::value_ptr(normal_to_light));
+		}
+
+		GL_ERRORS();
+
+		//Set layer num
+		//size_t layerCount = 1;
+		if (pipeline.LAYER_COUNT_uint != -1U) {
+			glUniform1ui(pipeline.LAYER_COUNT_uint, (uint32_t)1);
+		}
+		GL_ERRORS();
+
+		//Load mats array
+		if (pipeline.MATERIAL_TYPE_int_array != -1U) {
+
+			std::vector<int> mats = std::vector<int>(1); mats[0] = 0;
+			glUniform1iv(pipeline.MATERIAL_TYPE_int_array, 1, mats.data());
+		}
+		GL_ERRORS();
+
+		//Add view vector
+		if (pipeline.viewDir_vec3 != -1U) {
+			glm::vec3 dir = glm::normalize(cameras.front().transform->rotation * glm::vec3(0, 0, -1.f));
+			glUniform3fv(pipeline.viewDir_vec3, 1, glm::value_ptr(dir));
+		}
+
+		//Add light bool
+		if (pipeline.DO_LIGHT_bool != -1U) {
+			glUniform1ui(pipeline.DO_LIGHT_bool, (uint32_t)true);
+		}
+
+
+		//Not text
+		if (pipeline.TEXT_BOOL != -1U) {
+			glUniform1ui(pipeline.TEXT_BOOL, (uint32_t)false);
+		}
+		GL_ERRORS();
+		if (pipeline.TEXT_BOOL2 != -1U) {
+			glUniform1ui(pipeline.TEXT_BOOL2, (uint32_t)false);
+		}
+		GL_ERRORS();
+
+		std::vector<int> tempTexLocation;
+		tempTexLocation = std::vector<int>(1);
+		//set up textures:
+		for (uint32_t i = 0; i < 1; ++i) {
+			glActiveTexture(GL_TEXTURE0 + i);
+			glBindTexture((*pipeline.animations)[pipeline.currentAnimation].layers[i].textures[pipeline.currentFrame].target, (*pipeline.animations)[pipeline.currentAnimation].layers[i].textures[pipeline.currentFrame].texture);
+			tempTexLocation[i] = i;
+		}
+		GL_ERRORS();
+		glUniform1iv(glGetUniformLocation(program, "TEX_ARR"), (uint32_t)1, tempTexLocation.data());
+
+		GL_ERRORS();
+
+
+//		std::cout << "Num cloud verticies = " << verticesFull.size() << " or, " << verticesFull.size() / 6 << "clouds!\n";
+
+//		for (size_t i = 0; i < verticesFull.size(); i++) std::cout << verticesFull[i].Position.x << " " << verticesFull[i].Position.y << " "
+//			<< verticesFull[i].Position.z << "\n";
+		glDrawArrays(GL_TRIANGLES, 0, (GLsizei) (6*cloudSoFar));
+
+
+
+		//un-bind textures:
+		for (uint32_t i = 0; i < 1; ++i) {
+			glActiveTexture(GL_TEXTURE0 + i);
+			glBindTexture((*pipeline.animations)[pipeline.currentAnimation].layers[i].textures[pipeline.currentFrame].target, 0);
+		}
+		glActiveTexture(GL_TEXTURE0);
+
+		glUseProgram(0);
+		glBindVertexArray(0);
+		glDeleteVertexArrays(1, &vao);
+		glDeleteBuffers(1, &vbo);
 
 	GL_ERRORS();
 }

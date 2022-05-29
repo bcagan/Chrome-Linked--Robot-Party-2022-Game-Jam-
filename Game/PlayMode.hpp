@@ -20,14 +20,15 @@
 #include "Dialogue.hpp"
 #define PI_F 3.1415926f
 
-#define C_NUM_LINES 130
-#define C_MAX_PER_LINE 400/90
-
+#define C_NUM_LINES 180
+#define C_MAX_PER_LINE 1200/130
+#define HIGHEST_MAX_CLOUDS 1000
 
 //Global screen width and height
 inline int screenW = 0;
 inline int screenH = 0;
 extern SDL_Window* window;
+
 
 struct PlayMode : Mode {
 	PlayMode();
@@ -66,14 +67,14 @@ struct PlayMode : Mode {
 	//Clouds:
 	std::vector<Sprite> cloudLib;
 	std::list<Sprite> clouds;
-	int maxClouds = 300;
 	int curClouds = 0;
 	const int numLines = C_NUM_LINES;
 	const int maxCloudsPerLine = C_MAX_PER_LINE;
 	float maxCloudZ = 5.f;
-	float minCloudZ = -100.f;
-	float minCloudX = -18.f;
-	float maxCloudX = 18.f;
+	float minCloudZ = -140.f;
+	float minCloudX = -25.f;
+	float maxCloudX = 25.f;
+	int maxClouds = 1000;
 	float cloudSpeed = 2.f *(105.f)/((float) C_NUM_LINES);
 	void updateClouds();
 

@@ -186,11 +186,13 @@ struct Scene {
 	void draw(Camera const& camera) const;
 
 	//All sprite drawining is handled here, including updating animations, quad creation, translation, and drawing
-	void spriteDraw(Camera const& camera, bool proj = false, bool play = false, bool box = false, bool cloud = false);
+	void spriteDraw(Camera const& camera, bool proj = false, bool play = false, bool box = false);
+	void cloudDraw(Camera const& camera) ;
 
 	//..sometimes, you want to draw with a custom projection matrix and/or light space:
-	void draw(glm::mat4 const &world_to_clip, glm::mat4x3 const &world_to_light = glm::mat4x3(1.0f)) const;
-	void spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light = glm::mat4x3(1.0f), bool proj = false, bool play = false, bool box = false, bool cloud = false);
+	void draw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light = glm::mat4x3(1.0f)) const;
+	void cloudDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light = glm::mat4x3(1.0f)) ;
+	void spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light = glm::mat4x3(1.0f), bool proj = false, bool play = false, bool box = false);
 
 
 	//add transforms/objects/cameras from a scene file to this scene:

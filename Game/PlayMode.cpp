@@ -433,7 +433,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 				glm::vec3 inCamPos = glm::vec3((maxCloudX - minCloudX) * xPercentage + minCloudX, 0.f, (maxCloudZ - minCloudZ) * zPercentage + minCloudZ + xPercentage*2.f) ;
 				Sprite newCloud = cloudLib[rand() % cloudLib.size()];
 				newCloud.pos = camera->transform->make_local_to_world() * glm::vec4(inCamPos, 1.f);
-				newCloud.pos.z = -2.f;
+				newCloud.pos.z = -2.5f;
 				clouds.push_back(newCloud);
 		}
 	}
@@ -1303,7 +1303,7 @@ void PlayMode::updateClouds() {
 			float x = xPercentage * (maxCloudX - minCloudX) + minCloudX;
 			glm::vec3 inCamPos = glm::vec3(x, 0.f, minCloudZ + 2*xPercentage);
 			iter->pos = camera->transform->make_local_to_world() * glm::vec4(inCamPos, 1.f );
-			iter->pos.z = -2;
+			iter->pos.z = -2.5;
 			Sprite newCloud = *iter;
 			std::list<Sprite>::iterator delIter = iter;
 			iter++;
@@ -1739,6 +1739,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		enemy.sprite.pipeline.updateAnimation();
 		scene.sprites.push_back(enemy.sprite);
 	}
+	int cloudNum = 0;
 	for (auto& cloud = clouds.end(); cloud != clouds.begin(); cloud--) {
 		if (cloud == clouds.end()) cloud--;
 		cloud->pipeline.updateAnimation();
@@ -1826,7 +1827,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	GL_ERRORS();
 	scene.spriteDraw(*camera,true,false,false);
 	scene.spriteDraw(*camera, false,false,false);
-	scene.spriteDraw(*camera, false, false, false, true);
+	scene.cloudDraw(*camera);
 	scene.spriteDraw(*camera, false, true, false);
 	GL_ERRORS();
 
