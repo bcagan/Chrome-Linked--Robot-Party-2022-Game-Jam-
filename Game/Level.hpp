@@ -48,8 +48,19 @@ public:
 		}
 		glm::vec3 newPos = (1.f - segmentDelta / segmentTime) * posOffsetOld + (segmentDelta / segmentTime) * posOffsetNew;
 		posOffsetDelta = newPos - lastPos;
+		totalOffset += posOffsetDelta;
 		speed = posOffsetDelta.z;
 		lastPos = newPos;
+	}
+
+	void reset() {
+		posOffsetOld = glm::vec3(0.f);
+		posOffsetNew = glm::vec3(0.f);
+		posOffsetDelta = glm::vec3(0.f);
+		lastPos = glm::vec3(0.f);
+		segment = 0;
+		segmentTime = path[segment].first;
+		totalOffset = glm::vec3(0.f);
 	}
 
 	glm::vec3 posOffsetOld = glm::vec3(0.f); //Where in the scene were we?
@@ -63,6 +74,7 @@ public:
 	std::list<EnemySpawn> toSpawn;
 	std::vector<std::pair<float, glm::vec3>> path;
 	float speed = 1.f;
+	glm::vec3 totalOffset = glm::vec3(0.f);
 
 private:
 

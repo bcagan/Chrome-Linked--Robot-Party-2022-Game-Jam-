@@ -81,7 +81,7 @@ struct PlayMode : Mode {
 		//Projectiles
 		void createProjectileMech(int type, glm::vec3 motionVec, glm::vec3 playerPos);
 		void updateProjectiles(float elapsed);
-		int projectileHit(Sprite toHit);
+		std::vector<int> projectileHit(Sprite toHit);
 		
 		float projSpeed = 40.f;
 		float enemProjSpeed = 15.f;
@@ -199,6 +199,7 @@ struct PlayMode : Mode {
 
 	//Meshes:
 	bool bboxIntersect(BBoxStruct object, BBoxStruct stationary); //Intersect bboxes and return true if collision
+	std::vector<std::pair<GLuint, GLuint> > buildTexts;
 	
 	//Useful things related to player
 	glm::vec3 get_player_position();
@@ -220,8 +221,8 @@ struct PlayMode : Mode {
 		Sprite* reticle;
 		Sprite* controlReticle;
 
-		float health = 250.f;
-		float maxHealth = 250.f;
+		float health = 450.f;
+		float maxHealth = 450.f;
 		int meleeHitInvince = 45;
 		int meleeHitInvinceTimer = 0;
 
@@ -265,7 +266,6 @@ struct PlayMode : Mode {
 		void transitionMachine(int from, int to);
 		void updateStateMachine();
 	};
-	bool win = false;
 
 	StateMachine animation;
 	StateMachine horiMovement;
@@ -276,6 +276,11 @@ struct PlayMode : Mode {
 	Text text;
 	Sprite* textbox;
 	Dialogue prologue;
+	Dialogue preboss;
+	Dialogue postboss;
+	Dialogue predark;
+	Dialogue postdark;
+	Dialogue tutorial;
 	void drawTextbox(std::string textStr, GLuint bgTex, GLuint portTex);
 
 	Dialogue* curDisplay; //Sets which Dialogue should be drawn atm
@@ -291,7 +296,7 @@ struct PlayMode : Mode {
 	bool fullscreen = true;
 	enum gameplaystage
 	{
-		gs_init, gs_prologue, gs_level, gs_preboss, gs_boss, gs_postboss, gs_predark, gs_dark, gs_postdark
+		gs_init, gs_tutorial, gs_prologue, gs_level, gs_preboss, gs_boss, gs_postboss, gs_predark, gs_dark, gs_postdark
 	};
 	int currentstage = gameplaystage::gs_init;
 	void updatestage(float elapsed);
@@ -299,7 +304,10 @@ struct PlayMode : Mode {
 	bool dialogueEnd = false;
 	bool continueGame = false;
 	float bosstime = 0.f;
-	float highscore = 200.f;
+	float highscore = 100.f;
+	bool win = false;
+	void resetGame();
+	GLuint bgint;
 
 	//Misc
 	glm::vec3 offsetPlayerPos = glm::vec3(0.f);

@@ -1,0 +1,113 @@
+ENEMIES
+ENEMY_grazaJet 0.0f 100.f 0.0f 20.f
+ENEMY_grazaJet -1.0f 100.f 0.0f 15.f
+ENEMY_grazaJet 1.0f 100.f 0.0f 15.f
+ENEMY_grazaJet -1.0f 800.f 0.0f 40.f
+ENEMY_grazaJet -0.5f 830.f 0.0f 35.f
+ENEMY_grazaJet -0.f 860.f 0.0f 30.f
+ENEMY_grazaJet 0.5f 890.f 0.0f 25.f
+ENEMY_grazaJet 1.0f 910.f 0.0f 20.f
+ENEMY_grazaJet -1.0f 1300.f 1.0f 30.f
+ENEMY_grazaJet 1.f 1300.f 1.0f 30.f
+ENEMY_envoPilotRa 0.f 1300.f 0.0f 30.f
+ENEMY_grazaJet -1.f 1300.f -1.0f 30.f
+ENEMY_grazaJet 1.0f 1300.f -1.0f 30.f
+ENEMY_envoPilotRa -1.0f 1600.f 0.5f 20.f
+ENEMY_envoPilotRa 1.f 1600.f -0.5f 20.f
+ENEMY_envoPilotRa 0.f 2200.f 1.5f 20.f
+ENEMY_envoPilotRa 0.f 2200.f -1.5f 20.f
+ENEMY_envoPilotRa -1.2f 2200.f 0.9f 20.f
+ENEMY_envoPilotRa -1.2f 2200.f -0.9f 20.f
+ENEMY_envoPilotRa 1.2f 2200.f 0.9f 20.f
+ENEMY_envoPilotRa 1.2f 2200.f -0.9f 20.f
+ENEMY_envoPilotRa 0.f 2700.f 1.5f 20.f
+ENEMY_envoPilotRa 0.f 2700.f -1.5f 20.f
+ENEMY_envoPilotRa -1.2f 2700.f 0.9f 20.f
+ENEMY_envoPilotRa -1.2f 2700.f -0.9f 20.f
+ENEMY_envoPilotRa 1.2f 2700.f 0.9f 20.f
+ENEMY_envoPilotRa 1.2f 2700.f -0.9f 20.f
+ENEMY_envoPilotMe 0.f 2900.f 0.f 10.f
+ENEMY_envoPilotMe -1.f 3300.f 1.f 20.f
+ENEMY_envoPilotMe 1.f 3300.f -1.f 20.f
+ENEMY_envoPilotRa 0.f 3700.f 0.f 20.f
+ENEMY_grazaJet 0.5f 3700.f -0.3f 25.f
+ENEMY_grazaJet 2.2f 3800.f -1.5.f 40.f
+ENEMY_envoPilotRa 3.f 4000.f 0.f 40.f
+ENEMY_envoPilotRa -3.f 4000.f 0.f 40.f
+ENEMY_grazaJet 0.5f 4700.f 0.3f 25.f
+ENEMY_grazaJet 2.2f 4700.f 2.f 40.f
+ENEMY_envoPilotRa 3.f 5200.f 0.f 40.f
+ENEMY_envoPilotRa -1.f 5400.f 0.f 30.f
+ENEMY_envoPilotRa 1.f 5800.f 1.f 20.f
+ENEMY_envoPilotRa -1.f 6000.f -1.f 10.f
+ENEMY_envoPilotRa 0.f 6400.f 0.f 20.f
+ENEMY_grazaJet 0.5f 6500.f -1.f 40.f
+ENEMY_grazaJet -1.f 6000.f 0.5 40.f
+ENEMY_envoPilotRa -1.f 6700.f -1.f 20.f
+ENEMY_envoPilotRa 1.f 6900.f 1.f 20.f
+ENEMY_envoPilotRa -1.f 7300.f 0.f 20.f
+ENEMY_envoPilotRa 0.f 7400.f 1.f 20.f
+ENEMY_envoPilotMe 1.2f 7400.f -0.4f 20.f
+ENEMY_grazaJet 0.5f 7500.f -1.1f 40.f
+ENEMY_grazaJet -1.f 7500.f 0.9 40.f
+ENEMY_grazaJet 0.5f 7500.f -0.f 40.f
+ENEMY_grazaJet 0.f 7500.f 0.2 40.f
+ENEMY_grazaJet 0.3f 7500.f -1.1f 40.f
+ENEMY_grazaJet -1.4f 7500.f 0.5 40.f
+ENEMY_envoPilotRa 0.f 7700.f 1.f 20.f
+ENEMY_envoPilotRa 0.f 7700.f -1.f 20.f
+ENEMY_grazaJet 0.3f 8000.f 1.1f 30.f
+ENEMY_grazaJet 1.4f 8000.f 0.5 30.f
+PATH
+3.3f 0.0f 0.0f 0.0f
+3.3f 0.0f 150.0f 0.f
+3.3f 0.0f 300.0f 0.0f
+3.3f -0.0f 450.0f 0.0f
+3.3f 0.f 600.f 0.f
+3.3f 0.f 750.f 0.f
+3.3f 0.f 900.f 0.f
+3.3f -0.5f 1050.f 0.f
+3.3f 0.0f 1200.0f 0.0f
+3.3f 0.0f 1350.0f 0.0f
+3.3f -0.0f 1500.0f 0.0f
+3.3f 0.f 1650.f 0.f
+3.3f 0.f 1800.f 0.f
+3.3f 0.f 1950.f 0.f
+3.3f -0.5f 2100.f 0.f
+3.3f -0.5f 2250.f 0.f
+3.3f -0.5f 2400.f 0.f
+3.3f -0.5f 2550.f 0.f
+3.3f -0.5f 2700.f 0.f
+3.3f -0.5f 2850.f 0.f
+3.3f 0.0f 3000.0f 0.0f
+3.3f 0.0f 3150.0f 0.f
+3.3f 0.0f 3300.0f 0.0f
+3.3f -0.0f 3450.0f 0.0f
+3.3f 0.f 3600.f 0.f
+3.3f 0.f 3750.f 0.f
+3.3f 0.f 3900.f 0.f
+3.3f -1.5f 4050.f 0.f
+3.3f 0.0f 4200.0f 0.0f
+3.3f 3.0f 4350.0f 0.0f
+3.3f -2.0f 4500.0f 0.0f
+3.3f 0.f 4650.f 0.f
+3.3f 0.f 4800.f 0.f
+3.3f 2.f 4950.f 0.f
+3.3f -0.5f 5100.f 0.f
+3.3f -0.5f 5250.f 0.f
+3.3f -0.5f 5400.f 0.f
+3.3f 0.5f 5550.f 0.f
+3.3f -0.5f 5700.f 0.f
+3.3f -0.5f 5850.f 0.f
+3.3f 0.0f 6000.0f 0.0f
+3.3f 0.0f 6150.0f 0.f
+3.3f 0.0f 6300.0f 0.0f
+3.3f -0.0f 6450.0f 0.0f
+3.3f 0.f 6600.f 0.f
+3.3f 0.f 6750.f 0.f
+3.3f 0.f 6900.f 0.f
+3.3f -0.5f 7050.f 0.f
+3.3f 0.f 7300.f 0.f
+3.3f 0.f 7600.f 0.f
+3.3f 0.f 7900.f 0.f
+3.3f -0.5f 8200.f 0.f

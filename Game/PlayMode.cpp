@@ -19,19 +19,20 @@
 #include <string>
 #include "Text.hpp"
 #include <array>
+#include "load_save_png.hpp"
 
 #define AVOID_RECOLLIDE_OFFSET 0.05f
 #define DEATH_LAYER -10.0f
 
 GLuint test_meshes_for_lit_color_texture_program = 0;
 Load< MeshBuffer > test_meshes(LoadTagDefault, []() -> MeshBuffer const * {
-	MeshBuffer const *ret = new MeshBuffer(data_path("testScene.pnct"));
+	MeshBuffer const *ret = new MeshBuffer(data_path("level1Scene.pnct"));
 	test_meshes_for_lit_color_texture_program = ret->make_vao_for_program(lit_color_texture_program->program);
 	return ret;
 });
 
 Load< Scene > test_scene(LoadTagDefault, []() -> Scene const * {
-	return new Scene(data_path("testScene.scene"), [&](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
+	return new Scene(data_path("level1Scene.scene"), [&](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
 		Mesh const &mesh = test_meshes->lookup(mesh_name);
 
 		scene.drawables.emplace_back(transform);
@@ -76,7 +77,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 
 
 	//Load the level
-	level = Level("/Sources/Levels/LEVEL_test0.txt"); //Test level
+	level = Level("/Sources/Levels/LEVEL_1.txt"); //Level 1
 	//Copy level data: (Memory inefficient, but I cant figure out another way to do this without pissing off the compiler, or messing with other code)
 	//For now its fine, its not like Im loading that many enemies at a time
 	for (auto& enem : level.toSpawn) {
@@ -165,8 +166,58 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		cloud1.pipeline.setAnimation("cloud1");
 		cloud1.pipeline.defaultAnimation = (*cloud1.pipeline.animations)["cloud1"];
 		cloud1.width = 128; cloud1.height = 64;
-		cloud1.size = glm::vec2(0.7f);
+		cloud1.size = glm::vec2(0.85f);
 		scene.spriteLib["cloud1"] = cloud1;
+
+		Sprite BGSprite;
+		BGSprite.pipeline = lit_color_texture_program_sprite_pipeline;
+		BGSprite.pipeline.animations = new std::unordered_map < std::string, Sprite::SpriteAnimation >();
+		BGSprite.addAnimation("/Sources/Animations/ANIMATE_bg.txt");
+		BGSprite.pipeline.setAnimation("bg");
+		BGSprite.pipeline.defaultAnimation = (*BGSprite.pipeline.animations)["bg"];
+		BGSprite.width = 3840; BGSprite.height = 2160;
+		bgint = BGSprite.pipeline.defaultAnimation.layers[0].textures[0].texture;
+	}
+
+	//Load textures for buildings and other meshes if needed
+	{
+		std::string filename =  data_path(std::string("sources/building1color.png"));
+		GLuint tex1;
+		glGenTextures(1, &tex1);
+		std::vector<glm::u8vec4> data;
+		int width = 256;
+		int height = 256;
+		glm::uvec2 size = glm::uvec2(width, height);
+		load_png(filename, &size, &data, LowerLeftOrigin);
+		if (data.size() > 0)
+		{
+			glBindTexture(GL_TEXTURE_2D, tex1);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glBindTexture(GL_TEXTURE_2D, 1);
+		}
+		else  throw std::runtime_error("Error loading texture"); 
+		filename = data_path(std::string("sources/buidling1specular.png"));
+		GLuint tex2;
+		glGenTextures(1, &tex2);
+		load_png(filename, &size, &data, LowerLeftOrigin);
+		if (data.size() > 0)
+		{
+			glBindTexture(GL_TEXTURE_2D, tex2);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glBindTexture(GL_TEXTURE_2D, 1);
+		}
+		else  throw std::runtime_error("Error loading texture");
+		buildTexts = std::vector<std::pair<GLuint, GLuint>>(1);
+		buildTexts[0] = std::make_pair(tex1, tex2);
+
 	}
 
 
@@ -201,10 +252,18 @@ PlayMode::PlayMode() : scene(*test_scene) {
 				newSprite.name = "reticle";
 				scene.sprites.push_back(newSprite);
 				newSprite.pos = initPos + glm::vec3(1.f, 0.f, 0.2f);
-				newSprite.name = "controlReticle";
+				newSprite.name = "reticleControl";
 				scene.sprites.push_back(newSprite);
 			}
 
+		}
+		else if ((transformStr.substr(0, 8) == std::string("Building")) && (transformStr.size() > 8)) {
+			int intEndInd = 8;
+			while (transformStr[intEndInd] != 'T')intEndInd++;
+			int buildingType = std::atoi(transformStr.substr(8, intEndInd - 8).c_str());
+			assert(buildingType < buildTexts.size());
+			transform.texInf = buildTexts[buildingType];
+			transform.useTexInf = true;
 		}
 	}
 	Sprite newProjectile = scene.spriteLib["projectile1"];
@@ -235,7 +294,12 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	textboxSprite.size = glm::vec2(1/160.f);
 	textboxSprite.pos = camera->transform->make_local_to_world() * glm::vec4(-0.4f,-0.25f,-1.f,1.f);
 	scene.sprites.push_back(textboxSprite);
-	prologue = Dialogue("Sources/Dialogues/DIALOGUE_test0.txt");
+	prologue = Dialogue("Sources/Dialogues/DIALOGUE_prologue.txt");
+	preboss = Dialogue("Sources/Dialogues/DIALOGUE_preboss.txt");
+	postboss = Dialogue("Sources/Dialogues/DIALOGUE_postboss.txt");
+	predark = Dialogue("Sources/Dialogues/DIALOGUE_predark.txt");
+	postdark = Dialogue("Sources/Dialogues/DIALOGUE_postdark.txt");
+	tutorial = Dialogue("Sources/Dialogues/DIALOGUE_tutorial.txt");
 	
 
 	//Had I done my due dilligence, and wrote a quick quad rendering shader, this would have been far easier. The texture is 4k. But instead I decided
@@ -252,7 +316,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 			mech.reticle->pipeline.doLight = false;
 			mech.reticle->pipeline.isGui = true;
 		}
-		else if (sprite.name == std::string("controlReticle")) {
+		else if (sprite.name == std::string("reticleControl")) {
 			mech.controlReticle = &sprite;
 			mech.controlReticle->size *= mech.controlReticle->size;
 			mech.controlReticle->pipeline.doLight = false;
@@ -272,8 +336,20 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	lightTransform->rotation = glm::normalize(glm::angleAxis(-PI_F / 2.f, glm::vec3(0., 0.0f, -1.0f)));
 	Scene::Light newLight(lightTransform);
 	newLight.type = newLight.Hemisphere;
-	newLight.energy = glm::vec3(0.6f);
+	newLight.energy = glm::vec3(0.4f);
 	scene.lights.push_back(newLight);
+	Scene::Transform* lightTransform1 = new Scene::Transform();
+	lightTransform1->rotation = glm::normalize(glm::angleAxis(PI_F / 2.f, glm::vec3(1.f, 0.f, 0.f)))
+		* glm::normalize(glm::angleAxis(0.3f, glm::vec3(0.f, 1.f, 0.f)));
+	Scene::Light newLight1(lightTransform1);
+	newLight1.type = newLight1.Directional;
+	newLight1.energy = glm::vec3(0.55f, 0.55f, 0.43f);
+	scene.lights.push_back(newLight1);
+	Scene::Transform* lightTransform2 = new Scene::Transform();
+	Scene::Light newLight2(lightTransform2);
+	newLight2.type = newLight2.Directional;
+	newLight2.energy = glm::vec3(0.2f, 0.2f, 0.17f);
+	scene.lights.push_back(newLight2);
 
 
 
@@ -342,7 +418,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 
 	//Bosses
 
-	bossJebb.health = 900.f;
+	bossJebb.health =  900.f;
 	bossJebb.shotCooldown = 10;
 	bossJebb.enemyCooldown = 600;
 	bossJebb.projType = Projectile::PROJ_RapidEnemy;
@@ -469,25 +545,30 @@ void PlayMode::updateAllEnemies() {
 		{
 			if (iter->sprite.pipeline.hitTimer > 0) iter->sprite.pipeline.hitTimer--;
 			//Health drop
-			int projHitRes = projectileHit(iter->sprite);
-			if ((!iter->inMelee || (iter->inMelee && ((iter->meleeTimer > iter->toPlayerTime + iter->attackTime)))) //Melee enemy has invulnerability to proj unless returning 
-				&& projHitRes == Projectile::PROJ_RapidPlayer && iter->sprite.pipeline.hitTimer < 18 ) {
-				iter->health -= rapidPlayerDam;
-				iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
-			}
-			else if ((!iter->inMelee || (iter->inMelee && (iter->meleeTimer < iter->toPlayerTime || iter->meleeTimer > iter->toPlayerTime + iter->attackTime)))
-				&& projHitRes == Projectile::PROJ_SlowPlayer && iter->sprite.pipeline.hitTimer == 0) {
-				iter->health -= slowPlayerDam;
-				iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
-			}
-			else if ((!iter->inMelee || (iter->inMelee && (iter->meleeTimer < iter->toPlayerTime || iter->meleeTimer > iter->toPlayerTime + iter->attackTime)))
-				&& projHitRes == Projectile::PROJ_SlowPlayerReflect && iter->sprite.pipeline.hitTimer == 0) {
-				iter->health -= 2.f*slowPlayerDam;
-				iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
-			}
-			else if (projHitRes == Projectile::PROJ_Melee && iter->sprite.pipeline.hitTimer == 0) { //Melee enemy can be hit by melee attacks always
-				iter->health -= meleePlayerDam;
-				iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
+			std::vector<int> projHitResVec = projectileHit(iter->sprite);
+			bool thereWasMelee = false;
+			for (int ind = 0; ind < projHitResVec.size(); ind++) {
+				int projHitRes = projHitResVec[ind];
+				if (projHitRes == Projectile::PROJ_Melee) thereWasMelee = true;
+				if ((!iter->inMelee || (iter->inMelee && ((iter->meleeTimer > iter->toPlayerTime + iter->attackTime)))) //Melee enemy has invulnerability to proj unless returning 
+					&& projHitRes == Projectile::PROJ_RapidPlayer && iter->sprite.pipeline.hitTimer < 18) {
+					iter->health -= rapidPlayerDam;
+					iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
+				}
+				else if ((!iter->inMelee || (iter->inMelee && (iter->meleeTimer < iter->toPlayerTime || iter->meleeTimer > iter->toPlayerTime + iter->attackTime)))
+					&& projHitRes == Projectile::PROJ_SlowPlayer && iter->sprite.pipeline.hitTimer == 0) {
+					iter->health -= slowPlayerDam;
+					iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
+				}
+				else if ((!iter->inMelee || (iter->inMelee && (iter->meleeTimer < iter->toPlayerTime || iter->meleeTimer > iter->toPlayerTime + iter->attackTime)))
+					&& projHitRes == Projectile::PROJ_SlowPlayerReflect && iter->sprite.pipeline.hitTimer == 0) {
+					iter->health -= 2.f * slowPlayerDam;
+					iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
+				}
+				else if (projHitRes == Projectile::PROJ_Melee && iter->sprite.pipeline.hitTimer == 0) { //Melee enemy can be hit by melee attacks always
+					iter->health -= meleePlayerDam;
+					iter->sprite.pipeline.hitTimer = iter->sprite.pipeline.hitTime;
+				}
 			}
 			if (iter->health <= 0.f) {
 				iter->alive = false;
@@ -572,7 +653,7 @@ void PlayMode::updateAllEnemies() {
 							iter->initPos += glm::vec3(0.f, 0.f, 0.1f);
 						}
 					}
-					else if (projHitRes == Projectile::PROJ_Melee && iter->shotTimer > iter->shotCooldown && mech.meleeTimer > 0 && iter->meleeTimer < iter->toPlayerTime + iter->attackTime) { //Any melee attack
+					else if (thereWasMelee && iter->shotTimer > iter->shotCooldown && mech.meleeTimer > 0 && iter->meleeTimer < iter->toPlayerTime + iter->attackTime) { //Any melee attack
 						if(iter->meleeTimer == 0) iter->startPos = iter->sprite.pos; //From the player should cancel a melee enemy
 						iter->meleeTimer = iter->toPlayerTime + iter->attackTime;
 						iter->inMelee = true;
@@ -816,11 +897,18 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
 	if (evt.type == SDL_KEYDOWN) {
 		if (evt.key.keysym.sym == SDLK_ESCAPE) {
-			SDL_SetRelativeMouseMode(SDL_FALSE);
+			if (!pauseMode && !isdialogueDisplay) {
+				SDL_SetRelativeMouseMode(SDL_FALSE);
+				pauseMode = true;
+			}
+			else if (pauseMode && !isdialogueDisplay) {
+				pauseMode = false;
+				SDL_SetRelativeMouseMode(SDL_TRUE);
+			}
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_a) {
 			left.downs += 1;
-			if (isdialogueDisplay && !left.pressed && !curDisplay->atStart()) curDisplay->nextLine();
+			if (isdialogueDisplay && !left.pressed && !curDisplay->atStart()) curDisplay->lastLine();
 			left.pressed = true;
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_d) {
@@ -933,13 +1021,6 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			leftfire.pressed = false;
 			return true;
 		}
-		else if (evt.key.keysym.sym == SDLK_RSHIFT) {
-			if (SDL_GetRelativeMouseMode() == SDL_FALSE) {
-				SDL_SetRelativeMouseMode(SDL_TRUE);
-				return true;
-			}
-			return true;
-		}
 		else if (evt.key.keysym.sym == SDLK_LSHIFT) {
 			return true;
 		}
@@ -1021,6 +1102,7 @@ void PlayMode::createProjectileMech(int type, glm::vec3 motionVec, glm::vec3 pla
 }
 
 void PlayMode::updateProjectiles(float elapsed) {
+	if (pauseMode && !isdialogueDisplay) return;
 	std::vector< std::list<Projectile>::iterator> delIterators = std::vector<std::list<Projectile>::iterator>();
 	for (std::list<Projectile>::iterator it = projectiles.begin(); it != projectiles.end(); it++) {
 		Projectile proj = *it;
@@ -1075,33 +1157,36 @@ int PlayMode::projInter(Projectile& proj, Sprite hitSprite, float spriteHeight, 
 };
 
 
-int PlayMode::projectileHit(Sprite hitSprite) {
+std::vector<int> PlayMode::projectileHit(Sprite hitSprite) {
 
 	
 	glm::vec3 spritePos = scene.cameras.front().transform->make_world_to_local() * glm::vec4(hitSprite.pos,1.f) + glm::vec3(hitSprite.hitBoxOff, 0.f);
 	float spriteWidth = hitSprite.width * hitSprite.size.x / SPRITE_SCALE * hitSprite.hitBoxSize.x;
 	float spriteHeight = hitSprite.height * hitSprite.size.y / SPRITE_SCALE * hitSprite.hitBoxSize.y;
+	std::vector<int> ret = std::vector<int>();
 	for (auto& projIt = projectiles.begin(); projIt != projectiles.end(); projIt++) {
+		if (hitSprite.name != "player" && ret.size() > 1) return ret;
+		else if (hitSprite.name == "player" && ret.size() > 4) return ret;
 		Projectile& proj = *projIt;
 		if((proj.type == Projectile::PROJ_RapidPlayer || proj.type == Projectile::PROJ_SlowPlayer || proj.type == Projectile::PROJ_SlowPlayerReflect || proj.type == Projectile::PROJ_Melee)
 			&& ( hitSprite.name.size() > 5 && hitSprite.name.substr(0,5) == std::string("enemy"))) {
 			int temp = projInter(proj, hitSprite, spriteHeight, spriteWidth, spritePos);
-			if (temp >= 0) return temp;
+			if (temp >= 0) ret.push_back( temp);
 		}
 		else if ((proj.type == Projectile::PROJ_RapidEnemy || proj.type ==
 			Projectile::PROJ_SlowEnemy || proj.type == Projectile::PROJ_MeleeEnemy) && (hitSprite.name == "player")) {
 			int temp = projInter(proj, hitSprite, spriteHeight, spriteWidth, spritePos);
-			if (temp >= 0) return temp;
+			if (temp >= 0) ret.push_back( temp);
 		}
 		else if (( proj.type == Projectile::PROJ_SlowEnemy) && (hitSprite.name == "projectileMelee")) {
 			int temp = projInter(proj, hitSprite, spriteHeight, spriteWidth, spritePos);
 			if (temp >= 0) {
 				mech.reflect = projIt;
-				return temp;
+				ret.push_back( temp);
 			}
 		}
 	}
-	return -1;
+	return ret;
 }
 
 //State machines:
@@ -1271,6 +1356,7 @@ void PlayMode::offsetObjects() {
 	mech.reticle->pos += level.posOffsetDelta;
 	mech.controlReticle->pos += level.posOffsetDelta;
 	textbox->pos += level.posOffsetDelta;
+	camera->transform->position += level.posOffsetDelta;
 	for (auto& iter : enemies) {
 		if(iter.alive) iter.initPos += level.posOffsetDelta;
 		if (iter.alive && iter.inMelee) {
@@ -1282,18 +1368,23 @@ void PlayMode::offsetObjects() {
 	for (auto& iter : projectiles) {
 		iter.projSprite.pos += level.posOffsetDelta;
 	}
-	camera->transform->position += level.posOffsetDelta;
 }
 
 void PlayMode::updateClouds() {
+
+
+
 	
 	std::vector<std::list<Sprite>::iterator> despawnClouds = std::vector<std::list<Sprite>::iterator>();
 	glm::vec3 posOffsetDelta = level.curoffset();
 	for (std::list<Sprite>::iterator iter = clouds.begin(); iter != clouds.end(); iter++) {
-		iter->pos += level.posOffsetDelta;
+		if (!level.bossCheck()) iter->pos += level.posOffsetDelta;
 		glm::vec3 offsetCamera = camera->transform->make_world_to_local() * glm::vec4(iter->pos, 1.f) + glm::vec3(0.f, 0.f, cloudSpeed);
 		iter->pos = camera->transform->make_local_to_world() * glm::vec4(offsetCamera, 1.0f);
 	}
+
+
+
 	bool limitReached = false;
 	std::list<Sprite>::iterator iter = clouds.begin();
 	while (!limitReached) {
@@ -1348,7 +1439,16 @@ void PlayMode::updatestage(float elapsed){
 	switch (currentstage)
 	{
 	case(gameplaystage::gs_init):
+		SDL_SetRelativeMouseMode(SDL_TRUE);
 		if (!dialogueStart) {
+			curDisplay = &tutorial;
+			currentstage = gameplaystage::gs_tutorial;
+			displayDialogue();
+		}
+		break;
+	case(gameplaystage::gs_tutorial):
+		if (dialogueEnd) {
+			dialogueEnd = false;
 			curDisplay = &prologue;
 			currentstage = gameplaystage::gs_prologue;
 			displayDialogue();
@@ -1366,7 +1466,7 @@ void PlayMode::updatestage(float elapsed){
 		break;
 	case(gameplaystage::gs_level):
 		if (!dialogueStart && level.bossCheck()) {
-			curDisplay = &prologue;
+			curDisplay = &preboss;
 			currentstage = gameplaystage::gs_preboss;
 			displayDialogue();
 		}
@@ -1392,13 +1492,13 @@ void PlayMode::updatestage(float elapsed){
 			if (bosstime < highscore) {
 				currentstage = gameplaystage::gs_predark;
 				if (!dialogueStart) {
-					curDisplay = &prologue;
+					curDisplay = &predark;
 					displayDialogue();
 				}
 			}
 			else {
 				if (!dialogueStart) {
-					curDisplay = &prologue;
+					curDisplay = &postboss;
 					currentstage = gameplaystage::gs_postboss;
 					displayDialogue();
 				}
@@ -1436,7 +1536,7 @@ void PlayMode::updatestage(float elapsed){
 		if (bossDarkDefeated) {
 			
 			if (!dialogueStart) {
-				curDisplay = &prologue;
+				curDisplay = &postdark;
 				currentstage = gameplaystage::gs_postdark;
 				displayDialogue();
 			}
@@ -1456,10 +1556,48 @@ void PlayMode::updatestage(float elapsed){
 	}
 }
 
+void PlayMode::resetGame() {
+	curSpawnCheck = toSpawn.begin();
+	std::list<Enemy>::iterator iter = enemies.begin();
+	while (iter != enemies.end()) {
+		std::list<Enemy>::iterator despawn = iter;
+		iter++;
+		enemies.erase(despawn);
+	}
+
+	std::list<Projectile>::iterator proj = projectiles.begin();
+	while (proj != projectiles.end()) {
+		std::list<Projectile>::iterator despawn = proj;
+		proj++;
+		projectiles.erase(despawn);
+	}
+	mech.health = mech.maxHealth;
+	bosstime = 0.f;
+	currentstage = gs_level;
+	win = false;
+	bossJebbSpawned = false;
+	dialogueEnd = false;
+	dialogueStart = false;
+	pauseMode = false;
+	isdialogueDisplay = false;
+	continueGame = true;
+	currentstage = gameplaystage::gs_level;
+
+	mech.playerSprite->pos -= level.totalOffset;
+	mech.reticle->pos -= level.totalOffset;
+	mech.controlReticle->pos -= level.totalOffset;
+	textbox->pos -= level.totalOffset;
+	camera->transform->position -= level.totalOffset;
+	
+	for (auto cloud = clouds.begin(); cloud != clouds.end(); cloud++) {
+		cloud->pos -= level.totalOffset;
+	}
+
+	level.reset();
+
+}
+
 void PlayMode::update(float elapsed) {
-
-
-
 	if (!win && mech.health > 0.f) {
 
 		updatestage(elapsed);
@@ -1662,32 +1800,35 @@ void PlayMode::update(float elapsed) {
 				rightFiredCooldown = slowFiredCooldown;
 			}
 		}
-		updateProjectiles(elapsed);
+		if(!isdialogueDisplay) updateProjectiles(elapsed);
 
 
 		//Update player health
 		if (mech.playerSprite->pipeline.hitTimer > 0 && !pauseMode)mech.playerSprite->pipeline.hitTimer--;
-		int hitRes = hitRes = projectileHit(*(mech.playerSprite));
-		if (hitRes != -1 && mech.playerSprite->pipeline.hitTimer == 0 && !pauseMode) {
+		std::vector<int> hitResVec = projectileHit(*(mech.playerSprite));
+		if (hitResVec.size() > 0 && mech.playerSprite->pipeline.hitTimer == 0 && !pauseMode) {
 			mech.playerSprite->pipeline.hitTimer = mech.playerSprite->pipeline.hitTime;
-			switch (hitRes) {
-			case(Projectile::PROJ_RapidEnemy):
-				mech.health -= 0.3f;
-				break;
-			case(Projectile::PROJ_SlowEnemy):
-				mech.health -= 2.f;
-				break;
-			case(Projectile::PROJ_Bomb):
-				mech.health -= 5.0f;
-				break;
-			case(Projectile::PROJ_MeleeEnemy):
-				if (mech.meleeHitInvinceTimer == 0) {
+			for (int ind = 0; ind < hitResVec.size(); ind++) {
+				int hitRes = hitResVec[ind];
+				switch (hitRes) {
+				case(Projectile::PROJ_RapidEnemy):
+					mech.health -= 0.3f;
+					break;
+				case(Projectile::PROJ_SlowEnemy):
+					mech.health -= 2.f;
+					break;
+				case(Projectile::PROJ_Bomb):
 					mech.health -= 5.0f;
-					mech.meleeHitInvinceTimer = mech.meleeHitInvince;
+					break;
+				case(Projectile::PROJ_MeleeEnemy):
+					if (mech.meleeHitInvinceTimer == 0) {
+						mech.health -= 5.0f;
+						mech.meleeHitInvinceTimer = mech.meleeHitInvince;
+					}
+					break;
+				default:
+					break;
 				}
-				break;
-			default:
-				break;
 			}
 		}
 		if (mech.meleeHitInvinceTimer > 0 && !pauseMode) mech.meleeHitInvinceTimer--;
@@ -1710,17 +1851,17 @@ void PlayMode::update(float elapsed) {
 		std::cout << "Win!\n";
 	}
 	else {
-		std::cout << "Game Over!\n";
+		resetGame();
 	}
 }
 
 void PlayMode::drawTextbox(std::string textStr, GLuint bgTex, GLuint portTex) {
 	quad_texture_program_pipeline.texture = bgTex;
 	scene.drawQuad();
-	if (textBoxDisplay) {
+	if (textBoxDisplay && (currentstage != gs_tutorial)) {
 		scene.spriteDraw(*camera, false, false, true);
 		text.textColor = glm::vec3(1.f);
-		text.displayText(textStr, 0, glm::vec2(-0.55f, -.6f), glm::vec2(1.2f, 0.4f), 0.0016f);
+		text.displayText(textStr, 0, glm::vec2(-0.55f, -.6f), glm::vec2(1.1f, 0.4f), 0.0016f);
 		quad_texture_program_pipeline.texture = portTex;
 		scene.drawQuad(glm::vec2(-0.9f,-.995f),glm::vec2(0.3f,0.3f*16.f/10.f));
 	}
@@ -1790,6 +1931,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		}
 		else if (light.type == Scene::Light::Directional)
 		{
+			glm::vec3 dirDir = glm::vec3(-light_to_world[2]);
 			light_type.emplace_back(3);
 			light_cutoff.emplace_back(1.0f);
 		}
@@ -1823,11 +1965,15 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS); //this is the default depth comparison function, but FYI you can change it.
 
+
+	quad_texture_program_pipeline.texture = bgint;
+	scene.drawQuad(glm::vec2(-1.f), glm::vec2(2.f));
+
 	scene.draw(*camera);
 	GL_ERRORS();
-	scene.spriteDraw(*camera,true,false,false);
 	scene.spriteDraw(*camera, false,false,false);
 	scene.cloudDraw(*camera);
+	scene.spriteDraw(*camera, true, false, false);
 	scene.spriteDraw(*camera, false, true, false);
 	GL_ERRORS();
 
@@ -1862,7 +2008,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	else text.textColor = glm::vec3(0.3f, 1.f, 0.6f);
 	std::string healthString;
 	if(healthPercentage == 100.f) healthString = std::string("Health: ").append(std::to_string(healthPercentage).substr(0,3)).append(" %");
-	else healthString = std::string("Health: ").append(std::to_string(healthPercentage).substr(0, 4)).append("% (y toggles fullscreen, i quits)");
+	else healthString = std::string("Health: ").append(std::to_string(healthPercentage).substr(0, 4)).append("%");
 	if (!isdialogueDisplay)text.displayText(healthString, 0, glm::vec2(-.95f, 0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
 	std::string yourTime = std::to_string((float)((int)(bosstime * 1000.f)) / 1000.f);
 	std::string highTime = std::to_string((float)((int)(highscore * 1000.f)) / 1000.f);

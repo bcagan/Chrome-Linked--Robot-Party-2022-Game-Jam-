@@ -1,0 +1,19 @@
+BG:
+empty.txt
+EOB
+PORT:
+ZivPortrait.txt
+DarkPortrait.txt
+EOB
+DIAL:
+1 0 ???: How DARE you beat my time!
+0 0 Ziv: …your….  your what?
+1 0 ???: Do you not understand English you imbecile? MY TIME!
+0 0 Ziv: … who are you?
+1 0 Dark Schippie Dues: I am Dark Schippie Dues, all lands fear my name. Have you been living under some rock ...
+1 0 Dark Schippie Dues: ... or whatever your run-down dimension calls it
+0 0 Ziv: We call those rocks
+1 0 Dark Schippie Dues: Dammit, that's not the point!
+1 0 Dark Schippie Dues: Too hell with it, if you have my high score then I’ll get it back even if I have to kill you for it
+1 0 Dark Schippie Dues: Let’s make this a fair fight though, I wouldn’t want to be called a cheater now would I?
+EOB

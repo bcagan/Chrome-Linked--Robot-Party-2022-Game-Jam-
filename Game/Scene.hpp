@@ -45,6 +45,9 @@ struct Scene {
 		//The transform above may be relative to some parent transform:
 		Transform *parent = nullptr;
 
+		std::pair<GLuint, GLuint> texInf;
+		bool useTexInf = false;
+
 		//It is often convenient to construct matrices representing this transformation:
 		// ..relative to its parent:
 		glm::mat4x3 make_local_to_parent() const;

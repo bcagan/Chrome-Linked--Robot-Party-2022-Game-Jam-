@@ -1,0 +1,2 @@
+Bug list:
+- After I died and got up to the boss again, the Dark Schippie Dues dialogue started immediately. Then the dialogue got stuck in a loop between "How dare you beat my time" and "Let's make this a fair fight..."

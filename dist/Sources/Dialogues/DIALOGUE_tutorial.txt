@@ -1,0 +1,10 @@
+BG:
+tutorial.txt
+EOB
+PORT:
+EmptyPortrait.txt
+EOB
+DIAL:
+0 0 place
+0 1 holder
+EOB

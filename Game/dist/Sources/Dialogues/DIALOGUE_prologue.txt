@@ -1,0 +1,42 @@
+BG:
+bgtest0.txt
+EOB
+PORT:
+ZivPortrait.txt
+EmptyPortrait.txt
+TerranPortrait.txt
+ZivPortrait.txt
+GilPortrait.txt
+EOB
+DIAL:
+2 0 Terran (Ziv’s Brother) : *Working on Gigantus* And just plug that in here
+1 1 *typing*
+2 1 Terran: And your new INTELLIGENT-US should be loaded Av-I mean, Gigantus
+2 1 Terran: Now-
+1 1 *Ziv jumps up on to a metal beam near Terran*
+2 1 Terran: Wh…who are you?
+0 1 ???: ...
+1 1 *Explosions*
+4 2 Gil, the Boss of Envocron (creator of the new wave of mechs based on Gigantus)
+4 2 Gil: Long time no see Ziv, or should I say long time no talk’d
+3 2 Ziv: ...
+4 2 Gil: Gaha, just a small little quip
+3 2 Ziv: *sighs* Let’s get this over with. You said I was here for a contract. Who is it?
+4 2 Gil: You are and might I say a high paying one. 
+4 2 Gil: Let’s just say that so-called “resistance” has obtained some highly confidential information from us. I need to you to take care of the “mole”, so to speak.
+3 2 Ziv: You know I don’t want to get involved with that anymore. 
+3 2 Ziv: And besides, didn’t you base your technology off their own invention?
+4 2 Gil: ...
+4 2 Gil: GAHAHAHA! Ziv, you’re quick-witted as always. 
+4 2 Gil: Listen, I knew you’d be hesitant, but may I remind you that we promised over 1000000 E for this job.
+3 2 Ziv: ...
+3 2 Ziv: Just tell me what I need to do
+4 2 Gil: Simple, the Resistance is planning an attack on our HQ. 
+4 2 Gil: We have our own people ready to defend, but if you want to get your target, you’re going to need to get in there before anyone else.
+3 2 Ziv: And… when will I know who this target is?
+3 2 Ziv: Normally an assassin is told who they are going to assassinate before they assassinate them.
+4 2 Gil: Oh, you will know. I will check back in once you finish you assisining, or assassinating, or whatever you call it... 
+4 2 Gil: *belly laughing* GAHAHA
+1 2 *click*
+3 2 Ziv: Still insufferable...
+EOB

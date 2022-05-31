@@ -20,7 +20,6 @@
 
 void Dialogue::load(std::string filename) {
 	std::ifstream fstream;
-	//std::cout << "starting load of " << fileName << std::endl;
 	std::string properPath = data_path(filename);
 	fstream.open(properPath, std::ios::in | std::ios::binary);
 	char bufLine[999];
@@ -70,7 +69,7 @@ void Dialogue::load(std::string filename) {
 					fstream.getline(bufLine, 999);
 				}
 				if (fstream.eof()) {
-					std::cout << "ERROR: EOF encountered before EOB\n";
+					std::cout << "ERROR: EOF encountered before EOB (PORT) \n";
 					fstream.close();
 					assert(false);
 				}
@@ -98,13 +97,23 @@ void Dialogue::load(std::string filename) {
 						assert(false);
 					}
 					line.portrait = std::atoi(bufString.substr(0, space1).c_str());
+					if (line.portrait >= portraits.size()) {
+						std::cout << "ERROR: Portrait " << line.portrait << " doesn't exist\n";
+						fstream.close();
+						assert(false);
+					}
 					line.background = std::atoi(bufString.substr(space1 + 1, space2 - space1 - 1).c_str());
+					if (line.background >= backgrounds.pipeline.defaultAnimation.frames) {
+						std::cout << "ERROR: Background " << line.background << " doesn't exist\n";
+						fstream.close();
+						assert(false);
+					}
 					line.text = bufString.substr(space2 + 1, bufString.size() - space2 - 1);
 					data.push_back(line);
 					fstream.getline(bufLine, 999);
 				}
 				if (fstream.eof()) {
-					std::cout << "ERROR: EOF encountered before EOB\n";
+					std::cout << "ERROR: EOF encountered before EOB (DIAL)\n";
 					fstream.close();
 					assert(false);
 				}
@@ -112,7 +121,7 @@ void Dialogue::load(std::string filename) {
 
 			}
 			else {
-				std::cout << ("File formatting error: Missing Header. Did EOB occur too early?\n");
+				std::cout << "File " << filename << " formatting error : Missing Header.Did EOB occur too early ? \n";
 				fstream.close();
 				assert(false);
 			}

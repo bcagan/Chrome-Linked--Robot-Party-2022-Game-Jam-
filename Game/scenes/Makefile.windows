@@ -3,11 +3,11 @@ BLENDER="C:\Program Files\Blender Foundation\Blender 2.93\blender.exe"
 DIST=../dist
 
 all : \
-    $(DIST)/testScene.pnct \
-    $(DIST)/testScene.scene \
+    $(DIST)/level1Scene.pnct \
+    $(DIST)/level1Scene.scene \
 
-$(DIST)/testScene.scene : testScene.blend export-scene.py
-    $(BLENDER) --background --python export-scene.py -- "testScene.blend:Main" "$(DIST)/testScene.scene"
+$(DIST)/level1Scene.scene : level1Scene.blend export-scene.py
+    $(BLENDER) --background --python export-scene.py -- "level1Scene.blend:Main" "$(DIST)/level1Scene.scene"
 
-$(DIST)/testScene.pnct : testScene.blend export-meshes.py
-    $(BLENDER) --background --python export-meshes.py -- "testScene.blend:Main" "$(DIST)/testScene.pnct" 
+$(DIST)/level1Scene.pnct : level1Scene.blend export-meshes.py
+    $(BLENDER) --background --python export-meshes.py -- "level1Scene.blend:Main" "$(DIST)/level1Scene.pnct" 

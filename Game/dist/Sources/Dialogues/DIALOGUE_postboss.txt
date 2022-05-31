@@ -1,0 +1,34 @@
+BG:
+empty.txt
+EOB
+PORT:
+ZivPortrait.txt
+DarkPortrait.txt
+GilPortrait.txt
+TerranPortrait.txt
+JebbPortrait.txt
+EmptyPortrait.txt
+EOB
+DIAL:
+0 0 Ziv: …
+4 0 Jebb: Ziv… I… I’m sorry… about Terran
+0 0 Ziv: Why did you do it
+4 0 Jebb : I… I…
+5 0 *A flash of light comes out of Jebb’s mech*
+0 0 Ziv : What did you just do?
+4 0 Jebb : I interfered with our far-range communicators, but it will only keep them off for a few moments, so just listen.
+4 0 Jebb : Someone paid me, a man who went by "Gil"
+0 0 Ziv: !!!
+4 0 Jebb: Ziv, I have to tell you something el-
+5 0 *Jebb’s mech explodes from its damage*
+0 0 Ziv: …
+2 0 Gil: Ziv, I’ve been trying to call you. Did something happen
+0 0 Ziv: No. Nothing. I completed your mission
+2 0 Gil : Excellent old boy! Ill see to you getting your reward once your return to HQ. *Gahaha*
+0 0 Ziv: Terran.. n…no… stay with me
+3 0 Terran :  Ziv… its good… to finally see you again...
+0 0 Ziv: Please… look we can both survive this.
+3 0 Terran : Ziv… Everything’s gonna be alright, forever.
+0 0 Ziv : ...
+0 0 Ziv: Yeah, brother… I think I see it now. Everything’s gonna be alright, forever
+EOB

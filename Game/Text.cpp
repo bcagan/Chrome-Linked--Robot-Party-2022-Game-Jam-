@@ -157,18 +157,21 @@ void Text::displayText(std::string inText, size_t level, glm::vec2 pos, glm::vec
 	for (size_t g = 0; g < curLine.size(); g++) {
 		Glyph glyph = curLine[g];
 
+
 		//Create plane mesh
 		
 		float xPos = x + glyph.bearing.x * scale;
-		float yPos = y - (glyph.size.y - glyph.bearing.y) * scale - yOff;
+		float yPos = y - ((float)((int) glyph.size.y - (int) glyph.bearing.y)) * scale - yOff;
 		float width = glyph.size.x * scale;
 		if (xPos + width > pos.x + size.x && glyph.textureID == spaceTexID) {
 			yOff += 0.125f;
 			x = pos.x -(glyph.advance) * scale;
 		}
-		float height = glyph.size.y * scale;
+		float height = glyph.size.y * scale; 
 		if (yPos - height < pos.y - size.y) break;
 		std::array<Vertex, 6> vertices;
+
+
 
 		vertices[0].Position = glm::vec4(xPos, yPos + height, 0.f, 1.0f);
 		vertices[1].Position = glm::vec4(xPos,  yPos, 0.f, 1.0f);

@@ -263,19 +263,37 @@ void Scene::draw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_lig
 		}
 		GL_ERRORS();
 
-		//Set layer num to 0
-		if (pipeline.LAYER_COUNT_uint != -1U) {
-			unsigned int layerVal = 0;
-			glUniform1ui(pipeline.LAYER_COUNT_uint, layerVal);
-		}
-		GL_ERRORS();
+		if (!drawable.transform->useTexInf) {
+			//Set layer num to 0
+			if (pipeline.LAYER_COUNT_uint != -1U) {
+				unsigned int layerVal = 0;
+				glUniform1ui(pipeline.LAYER_COUNT_uint, layerVal);
+			}
+			GL_ERRORS();
 
-		//Set layer 1 material to 1
-		if (pipeline.MATERIAL_TYPE_int_array != -1U) {
-			int mat = 1;
-			glUniform1iv(pipeline.MATERIAL_TYPE_int_array, 1, &mat);
+			//Set layer 0 material to 0
+			if (pipeline.MATERIAL_TYPE_int_array != -1U) {
+				int mat = 0;
+				glUniform1iv(pipeline.MATERIAL_TYPE_int_array, 1, &mat);
+			}
+			GL_ERRORS();
 		}
-		GL_ERRORS();
+		else {
+			//Buidlings have layer 0 = albedo (mat 0) and layer 1 = specular (mat 1) 
+			if (pipeline.LAYER_COUNT_uint != -1U) {
+				unsigned int layerVal = 2;
+				glUniform1ui(pipeline.LAYER_COUNT_uint, layerVal);
+			}
+			GL_ERRORS();
+
+			if (pipeline.MATERIAL_TYPE_int_array != -1U) {
+				int matTypeArr[2];
+				matTypeArr[0] = 0; matTypeArr[1] = 1;
+				glUniform1iv(pipeline.MATERIAL_TYPE_int_array, 2, matTypeArr);
+			}
+			GL_ERRORS();
+
+		}
 
 		//Add view vector
 		if (pipeline.viewDir_vec3 != -1U) {
@@ -302,18 +320,31 @@ void Scene::draw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_lig
 		//set any requested custom uniforms:
 		if (pipeline.set_uniforms) pipeline.set_uniforms();
 
-		std::vector<int> tempTexLocation;
-		tempTexLocation = std::vector<int>(Drawable::Pipeline::TextureCount) ;
 		//set up textures:
-		for (uint32_t i = 0; i < Drawable::Pipeline::TextureCount; ++i) {
-			if (pipeline.textures[i].texture != 0) {
-				glActiveTexture(GL_TEXTURE0 + i);
-				glBindTexture(pipeline.textures[i].target, pipeline.textures[i].texture);
-				tempTexLocation[i] = i;
+		if (!drawable.transform->useTexInf) {
+			std::vector<int> tempTexLocation;
+			tempTexLocation = std::vector<int>(Drawable::Pipeline::TextureCount);
+			for (uint32_t i = 0; i < Drawable::Pipeline::TextureCount; ++i) {
+				if (pipeline.textures[i].texture != 0) {
+					glActiveTexture(GL_TEXTURE0 + i);
+					glBindTexture(pipeline.textures[i].target, pipeline.textures[i].texture);
+					tempTexLocation[i] = i;
+				}
 			}
+			glUniform1iv(glGetUniformLocation(pipeline.program, "TEX_ARR"), Drawable::Pipeline::TextureCount, tempTexLocation.data());
+		}
+		else {
+			std::vector<int> tempTexLocation;
+			tempTexLocation = std::vector<int>(2);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, drawable.transform->texInf.first);
+			tempTexLocation[0] = 0;
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, drawable.transform->texInf.second);
+			tempTexLocation[1] = 1;
+			glUniform1iv(glGetUniformLocation(pipeline.program, "TEX_ARR"), 2, tempTexLocation.data());
 		}
 		GL_ERRORS();
-		glUniform1iv(glGetUniformLocation(pipeline.program, "TEX_ARR"), Drawable::Pipeline::TextureCount, tempTexLocation.data());
 
 
 		//glActiveTexture(GL_TEXTURE1);
@@ -326,11 +357,21 @@ void Scene::draw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_lig
 
 		GL_ERRORS();
 		//un-bind textures:
-		for (uint32_t i = 0; i < Drawable::Pipeline::TextureCount; ++i) {
-			if (pipeline.textures[i].texture != 0) {
-				glActiveTexture(GL_TEXTURE0 + i);
-				glBindTexture(pipeline.textures[i].target, 0);
+
+		//set up textures:
+		if (!drawable.transform->useTexInf) {
+			for (uint32_t i = 0; i < Drawable::Pipeline::TextureCount; ++i) {
+				if (pipeline.textures[i].texture != 0) {
+					glActiveTexture(GL_TEXTURE0 + i);
+					glBindTexture(pipeline.textures[i].target, 0);
+				}
 			}
+		}
+		else {
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, 0);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 		GL_ERRORS();
 		glActiveTexture(GL_TEXTURE0);
@@ -367,10 +408,10 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		//printf("Entered sprite draw\n");
 		if (sprite.name.substr(0, 10) == std::string("projectile") && !proj) continue;
 		if (sprite.name.substr(0, 10) != std::string("projectile") && proj) continue;
-		if (sprite.name.substr(0, 6) == std::string("player") && !play) continue;
-		if (sprite.name.substr(0, 6) != std::string("player") && play) continue;
-		if (sprite.name.substr(0, 7) == std::string("textbox") && !box) continue;
-		if (sprite.name.substr(0, 7) != std::string("textbox") && box) continue;
+		if ((sprite.name.substr(0, 6) == std::string("player") || (sprite.name.substr(0, 6) == std::string("reticl"))) && !play) continue;
+		if (sprite.name.substr(0, 6) != std::string("player") && (sprite.name.substr(0, 6) != std::string("reticl")) && play) continue;
+		if ((sprite.name.substr(0, 7) == std::string("textbox") ) && !box) continue;
+		if ((sprite.name.substr(0, 7) != std::string("textbox"))  && box) continue;
 		if (sprite.name.substr(0, 5) == std::string("cloud")) continue;
 		if (!sprite.doDraw) continue;
 
@@ -398,7 +439,7 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		vertices[4].Position = glm::vec4(width, 0.f, 0.f, 1.0f);
 		vertices[5].Position = glm::vec4(width, 0.f, height, 1.0f);
 		for (size_t c = 0; c < 6; c++) {
-			vertices[c].Normal = glm::vec3(0.0f, 0.0f, 1.0f);
+			vertices[c].Normal = glm::vec3(0.0f, -1.0f, 0.f);
 			vertices[c].Color = quadColor;
 		}
 		vertices[0].TexCoord = glm::vec2(0.0f, 0.0f);
@@ -579,6 +620,11 @@ void Scene::cloudDraw(Camera const& camera)  {
 
 void Scene::cloudDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light) {
 
+
+	GL_ERRORS();
+	glEnable(GL_BLEND);
+	GL_ERRORS();
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	//Create sprite draw program
 	GLuint vao = 0;
