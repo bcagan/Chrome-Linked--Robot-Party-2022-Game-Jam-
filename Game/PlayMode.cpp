@@ -101,6 +101,16 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		test.pipeline.isGui = false;
 		scene.spriteLib["test"] = test;
 
+		Sprite grazaloid;
+		grazaloid.pipeline = lit_color_texture_program_sprite_pipeline;
+		grazaloid.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
+		grazaloid.addAnimation("/Sources/Animations/ANIMATE_DevilBotFlyingIdle.txt");
+		grazaloid.pipeline.setAnimation("DevilBotFlyingIdle");
+		grazaloid.pipeline.defaultAnimation = (*grazaloid.pipeline.animations)["DevilBotFlyingIdle"];
+		grazaloid.width = 128; grazaloid.height = 128;
+		grazaloid.size = glm::vec2(.25f);
+		scene.spriteLib["grazaloid"] = grazaloid;
+
 		Sprite reticle;
 		reticle.pipeline = lit_color_texture_program_sprite_pipeline;
 		reticle.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
@@ -368,7 +378,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	grazaloidJet.shotCooldown = 10;
 	grazaloidJet.projType = Projectile::PROJ_RapidEnemy;
 	//TEMP SPRITE:
-	grazaloidJet.sprite = scene.spriteLib["test"];
+	grazaloidJet.sprite = scene.spriteLib["grazaloid"];
 	grazaloidJet.sprite.name = "enemyGrazaloid";
 	grazaloidJet.type = Enemy::ENEMY_grazaJet;
 	grazaloidJet.path = std::vector<std::pair<int, glm::vec2>>();
@@ -397,8 +407,8 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	//For both, enemy cooldown is despawn timer
 
 	//Ranged only
-	envocronRangedPilot.health = 4.f * grazaloidJet.health;
 	envocronRangedPilot = envocronMeleePilot;
+	envocronRangedPilot.health = 4.f * grazaloidJet.health;
 	envocronRangedPilot.shotCooldown = 40;
 	envocronRangedPilot.enemyCooldown = 1200;
 	envocronRangedPilot.projType = Projectile::PROJ_SlowEnemy;
@@ -576,7 +586,8 @@ void PlayMode::updateAllEnemies() {
 			}
 			if (iter->health <= 0.f) {
 				iter->alive = false;
-				if(iter->type != iter->BOSS_Jebb) iter->sprite.pipeline.setAnimation("slowTest"); //Temp to add defeat animation
+				if (iter->type == iter->ENEMY_grazaJet) iter->sprite.pipeline.allRed = true;
+				else if(iter->type != iter->BOSS_Jebb) iter->sprite.pipeline.setAnimation("slowTest"); //Temp to add defeat animation
 			}
 			else {//AI
 				//Movement:
@@ -1883,6 +1894,13 @@ void PlayMode::drawTextbox(std::string textStr, GLuint bgTex, GLuint portTex) {
 	}
 }
 
+// comparison sprites by y (backwards)
+inline bool compare_sprites(const PlayMode::Enemy& first, const PlayMode::Enemy& second)
+{
+
+	return first.sprite.pos.y > second.sprite.pos.y;
+}
+
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 
@@ -1892,6 +1910,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		proj.projSprite.pipeline.updateAnimation();
 		scene.sprites.push_back(proj.projSprite);
 	}
+	enemies.sort(compare_sprites);
 	for (auto& enemy : enemies) {
 		enemy.sprite.pipeline.updateAnimation();
 		scene.sprites.push_back(enemy.sprite);

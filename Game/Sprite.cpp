@@ -87,7 +87,7 @@ void Sprite::addAnimation(std::string fileName, bool verbosity) {
 		if (verbosity) std::cout << fileName << " loaded succesfully\n";
 	}
 	else {
-		std::cout << "ERROR: Error adding annimation " << fileName << std::endl;
+		std::cout << "ERROR: Error adding annimation " << fileName << "." << std::endl;
 		assert(false);
 	}
 }

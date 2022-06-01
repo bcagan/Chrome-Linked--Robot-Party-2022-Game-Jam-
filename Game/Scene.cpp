@@ -410,8 +410,8 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		if (sprite.name.substr(0, 10) != std::string("projectile") && proj) continue;
 		if ((sprite.name.substr(0, 6) == std::string("player") || (sprite.name.substr(0, 6) == std::string("reticl"))) && !play) continue;
 		if (sprite.name.substr(0, 6) != std::string("player") && (sprite.name.substr(0, 6) != std::string("reticl")) && play) continue;
-		if ((sprite.name.substr(0, 9) == "enemyJebb" || (sprite.name.substr(0, 9) == "enemyDark")) && !boss) continue;
-		if ((sprite.name.substr(0, 9) != "enemyJebb" && (sprite.name.substr(0, 9) != "enemyDark")) && boss) continue;
+		if ((sprite.name.substr(0, 5) == "enemy") && !boss) continue;
+		if ((sprite.name.substr(0, 5) != "enemy") && boss) continue;
 		if ((sprite.name.substr(0, 7) == std::string("textbox") ) && !box) continue;
 		if ((sprite.name.substr(0, 7) != std::string("textbox"))  && box) continue;
 		if (sprite.name.substr(0, 5) == std::string("cloud")) continue;
@@ -430,9 +430,12 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		glm::vec4 quadColor = glm::vec4(1.0f);
 		if (pipeline.hitTimer > 0) {
 			float percentage = (float)pipeline.hitTimer / (float)pipeline.hitTime;
-			if (!play) quadColor = glm::vec4(1.0f, percentage * 0.5f + 0.5f, percentage * 0.5f + 0.5f, 1.0f);
+			if (sprite.name.substr(0,8) == "enemyEnv") quadColor =  glm::vec4(1.0f, percentage * 0.8f + 0.2f, percentage * 0.8f + 0.2f, 1.0f);
+			else if (!play && !(sprite.name.substr(0, 6) == "enemyG")) quadColor = glm::vec4(1.0f, percentage * 0.5f + 0.5f, percentage * 0.5f + 0.5f, 1.0f);
 			else quadColor = glm::vec4(percentage * 0.5f + 0.5f, 1.0f, percentage * 0.5f + 0.5f, 1.0f);
 		}
+		if(pipeline.allRed)
+			quadColor = glm::vec4(1.0f,0.2f, 0.2f, 1.0f);
 
 		vertices[0].Position = glm::vec4(0.f, 0.f, height, 1.0f);
 		vertices[1].Position = glm::vec4(0.f, 0.f, 0.f, 1.0f);

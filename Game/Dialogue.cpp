@@ -35,6 +35,7 @@ void Dialogue::load(std::string filename) {
 				sprite.pipeline = lit_color_texture_program_sprite_pipeline;
 				sprite.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
 				sprite.addAnimation(bg);
+				if (bgName[bgName.size() - 1] == '.') bgName = bgName.substr(0, bgName.size() - 1);
 				sprite.pipeline.setAnimation(bgName);
 				sprite.pipeline.defaultAnimation = (*sprite.pipeline.animations)[bgName];
 				sprite.width = 3840; sprite.height = 2160;

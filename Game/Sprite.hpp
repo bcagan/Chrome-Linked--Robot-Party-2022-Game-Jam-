@@ -145,6 +145,7 @@ public:
 		std::unordered_map<std::string, SpriteAnimation>* animations;  //Pointer so multiple sprites don't allocate the same animation too often
 		SpriteAnimation defaultAnimation; 
 		std::vector<SpriteTextureInfo> currentTextures; //layer size vector
+		bool allRed = false;//Instead of damaged animation
 
 		void setAnimation(std::string whichAnimation) {
 			currentAnimation = whichAnimation;
