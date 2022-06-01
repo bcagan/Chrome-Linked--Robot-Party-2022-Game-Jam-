@@ -430,6 +430,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 
 	//Ranged only
 	envocronRangedPilot = envocronMeleePilot;
+	envocronRangedPilot.sprite = scene.spriteLib["rangebot"];
 	envocronRangedPilot.health = 4.f * grazaloidJet.health;
 	envocronRangedPilot.shotCooldown = 40;
 	envocronRangedPilot.enemyCooldown = 1200;
@@ -439,6 +440,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 
 	//Melee only
 	envocronMeleePilot.health = 10.f * grazaloidJet.health;
+	envocronMeleePilot.sprite = scene.spriteLib["meleebot"];
 	envocronMeleePilot.shotCooldown = 200;
 	envocronMeleePilot.enemyCooldown = 3000;
 	envocronMeleePilot.toPlayerTime = 20;
@@ -608,8 +610,7 @@ void PlayMode::updateAllEnemies() {
 			}
 			if (iter->health <= 0.f) {
 				iter->alive = false;
-				if (iter->type == iter->ENEMY_grazaJet) iter->sprite.pipeline.allRed = true;
-				else if(iter->type != iter->BOSS_Jebb) iter->sprite.pipeline.setAnimation("slowTest"); //Temp to add defeat animation
+				iter->sprite.pipeline.allRed = true;
 			}
 			else {//AI
 				//Movement:
