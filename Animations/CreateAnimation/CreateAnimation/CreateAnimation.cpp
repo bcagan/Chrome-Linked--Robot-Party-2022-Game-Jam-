@@ -12,6 +12,15 @@ int main()
 {
     int h, w;
     int nameSize = 0;
+    std::cout << "Press 0 to batch and 1 (other) to load file by file. \n";
+    int batch = 0;
+    std::cin >> batch;
+    int batchPlaces = 4;
+    batch = !batch; //:(
+    if (batch) {
+        std::cout << "How many places will the index of the file have?\n";
+        std::cin >> batchPlaces;
+    }
     std::cout << "What is the size of this animation's name?\n";
     std::cin >> nameSize;
     std::string name;
@@ -86,45 +95,102 @@ int main()
         
         //Write this data
 
-        for (int f = 0; f < numFrames; f++) {
-            std::cout << "LAYER, FRAME: " << l << ", " << f << std::endl;
-            std::cout << "Please give the file name. File dir should be ../Textures/[INPUT]\n";
-            std::string fileExtend;
-            std::cin >> fileExtend;
-            std::string file = std::string("../../Textures/").append(fileExtend);
-            std::cout << "Loading " << file << std::endl;
-            int width, height, nrChannels;
-            unsigned char* data = stbi_load(file.c_str(), &width, &height, &nrChannels, 0);
-            if (data == NULL) {
-                std::cout << "ERROR: Image load failed\n";
-                fstream.close();
-                return 1;
-            }
-            assert(data);
-            //Each channel is 8 bits, so 1 byte per channel.
-            int sizeofTex = nrChannels * height * width;
-            if (nrChannels < 4) {
-                std::cout << "ERROR: Data should be formatted with at least RGBA\n";
-                fstream.close();
-                return 1;
-            }
-            if (w != width || h != height) {
-                std::cout << "ERROR: Width and height do not match.\n";
-                fstream.close();
-                return 1;
-            }
-            assert(w == width && h == height);
-            std::cout << "Data loaded succesfully. Texture size " << sizeofTex << std::endl;
+        if (!batch) {
 
-            //Write texture size
+            for (int f = 0; f < numFrames; f++) {
+                std::cout << "LAYER, FRAME: " << l << ", " << f << std::endl;
+                std::cout << "Please give the file name. File dir should be ../Textures/[INPUT]\n";
+                std::string fileExtend;
+                std::cin >> fileExtend;
+                std::string file = std::string("../../Textures/").append(fileExtend);
+                std::cout << "Loading " << file << std::endl;
+                int width, height, nrChannels;
+                unsigned char* data = stbi_load(file.c_str(), &width, &height, &nrChannels, 0);
+                if (data == NULL) {
+                    std::cout << "ERROR: Image load failed\n";
+                    fstream.close();
+                    return 1;
+                }
+                assert(data);
+                //Each channel is 8 bits, so 1 byte per channel.
+                int sizeofTex = nrChannels * height * width;
+                if (nrChannels < 4) {
+                    std::cout << "ERROR: Data should be formatted with at least RGBA\n";
+                    fstream.close();
+                    return 1;
+                }
+                if (w != width || h != height) {
+                    std::cout << "ERROR: Width and height do not match.\n";
+                    fstream.close();
+                    return 1;
+                }
+                assert(w == width && h == height);
+                std::cout << "Data loaded succesfully. Texture size " << sizeofTex << std::endl;
 
-            writeStr = std::to_string(sizeofTex);
-            fstream.write(writeStr.c_str(), writeStr.size() );
-            fstream.write("\n", 1);
+                //Write texture size
 
-            //Write texture
-            fstream.write((const char*)data, sizeofTex);
-            fstream.write("\n", 1);
+                writeStr = std::to_string(sizeofTex);
+                fstream.write(writeStr.c_str(), writeStr.size());
+                fstream.write("\n", 1);
+
+                //Write texture
+                fstream.write((const char*)data, sizeofTex);
+                fstream.write("\n", 1);
+            }
+        }
+        else {
+
+            std::cout << "Please enter the batch name\n";
+            std::string fileBase;
+            std::cin >> fileBase;
+
+            for (int f = 0; f < numFrames; f++) {
+                std::cout << "LAYER, FRAME: " << l << ", " << f << std::endl;
+                std::string frameStr = std::to_string(f);
+                std::cout << "Test: " << frameStr << std::endl;
+                int frameSize = frameStr.size();
+                for (int i = 0; i < batchPlaces - frameSize; i++) {
+                    frameStr = std::string("0").append(frameStr);
+                    std::cout << "after i = " << i << " " << frameStr << std::endl;
+                }
+                std::string fileExtend = std::string(fileBase.c_str());
+                fileExtend = fileExtend.append(frameStr);
+                std::string file = std::string("../../Textures/").append(fileExtend).append(".png");
+                std::cout << "Loading " << file << std::endl;
+                int width, height, nrChannels;
+                unsigned char* data = stbi_load(file.c_str(), &width, &height, &nrChannels, 0);
+                if (data == NULL) {
+                    std::cout << "ERROR: Image load failed\n";
+                    fstream.close();
+                    return 1;
+                }
+                assert(data);
+                //Each channel is 8 bits, so 1 byte per channel.
+                int sizeofTex = nrChannels * height * width;
+                if (nrChannels < 4) {
+                    std::cout << "ERROR: Data should be formatted with at least RGBA\n";
+                    fstream.close();
+                    return 1;
+                }
+                if (w != width || h != height) {
+                    std::cout << "ERROR: Width and height do not match.\n";
+                    fstream.close();
+                    return 1;
+                }
+                assert(w == width && h == height);
+                std::cout << "Data loaded succesfully. Texture size " << sizeofTex << std::endl;
+
+                //Write texture size
+
+                writeStr = std::to_string(sizeofTex);
+                fstream.write(writeStr.c_str(), writeStr.size());
+                fstream.write("\n", 1);
+
+                //Write texture
+                fstream.write((const char*)data, sizeofTex);
+                fstream.write("\n", 1);
+            }
+
         }
 
     }

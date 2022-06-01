@@ -386,14 +386,14 @@ void Scene::draw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_lig
 }
 
 
-void Scene::spriteDraw(Camera const& camera, bool proj, bool play, bool box) {
+void Scene::spriteDraw(Camera const& camera, bool proj, bool play, bool box, bool boss) {
 	assert(camera.transform);
 	glm::mat4 world_to_clip = camera.make_projection() * glm::mat4(camera.transform->make_world_to_local());
 	glm::mat4x3 world_to_light = glm::mat4x3(1.0f);
-	spriteDraw(world_to_clip, world_to_light, proj, play, box);
+	spriteDraw(world_to_clip, world_to_light, proj, play, box, boss);
 }
 
-void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light, bool proj, bool play, bool box) {
+void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_light, bool proj, bool play, bool box, bool boss) {
 
 
 	//Create sprite draw program
@@ -410,6 +410,8 @@ void Scene::spriteDraw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_
 		if (sprite.name.substr(0, 10) != std::string("projectile") && proj) continue;
 		if ((sprite.name.substr(0, 6) == std::string("player") || (sprite.name.substr(0, 6) == std::string("reticl"))) && !play) continue;
 		if (sprite.name.substr(0, 6) != std::string("player") && (sprite.name.substr(0, 6) != std::string("reticl")) && play) continue;
+		if ((sprite.name.substr(0, 9) == "enemyJebb" || (sprite.name.substr(0, 9) == "enemyDark")) && !boss) continue;
+		if ((sprite.name.substr(0, 9) != "enemyJebb" && (sprite.name.substr(0, 9) != "enemyDark")) && boss) continue;
 		if ((sprite.name.substr(0, 7) == std::string("textbox") ) && !box) continue;
 		if ((sprite.name.substr(0, 7) != std::string("textbox"))  && box) continue;
 		if (sprite.name.substr(0, 5) == std::string("cloud")) continue;

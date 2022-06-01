@@ -126,15 +126,16 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		projectile.addAnimation("/Sources/Animations/ANIMATE_projectileDark.txt");
 		scene.spriteLib["projectile1"] = projectile;
 
-		Sprite bossSprite;
-		bossSprite.pipeline = lit_color_texture_program_sprite_pipeline;
-		bossSprite.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
-		bossSprite.addAnimation("/Sources/Animations/ANIMATE_BossPlaceholder.txt");
-		bossSprite.pipeline.setAnimation("BossPlaceholder");
-		bossSprite.pipeline.defaultAnimation = (*bossSprite.pipeline.animations)["BossPlaceholder"];
-		bossSprite.width = 128; bossSprite.height = 256;
-		bossSprite.size = glm::vec2(1.f);
-		scene.spriteLib["boss"] = bossSprite;
+		Sprite bossSpriteJebb;
+		bossSpriteJebb.pipeline = lit_color_texture_program_sprite_pipeline;
+		bossSpriteJebb.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
+		bossSpriteJebb.addAnimation("/Sources/Animations/ANIMATE_GammaBotFlyingIdle.txt");
+		bossSpriteJebb.addAnimation("/Sources/Animations/ANIMATE_GammaBotDoubleCannons.txt");
+		bossSpriteJebb.pipeline.setAnimation("GammaBotFlyingIdle");
+		bossSpriteJebb.pipeline.defaultAnimation = (*bossSpriteJebb.pipeline.animations)["GammaBotFlyingIdle"];
+		bossSpriteJebb.width = 256; bossSpriteJebb.height = 256;
+		bossSpriteJebb.size = glm::vec2(0.75f);
+		scene.spriteLib["Jebb"] = bossSpriteJebb;
 
 		Sprite zivMech;
 		zivMech.pipeline = lit_color_texture_program_sprite_pipeline;
@@ -142,6 +143,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		zivMech.addAnimation("/Sources/Animations/ANIMATE_ZivMechFlying.txt");
 		zivMech.addAnimation("/Sources/Animations/ANIMATE_ZivMechFlyingLeft.txt");
 		zivMech.addAnimation("/Sources/Animations/ANIMATE_ZivMechFlyingRight.txt");
+		zivMech.addAnimation("/Sources/Animations/ANIMATE_ZivMechAttack.txt");
 		zivMech.pipeline.setAnimation("ZivMechFlying");
 		zivMech.pipeline.defaultAnimation = (*zivMech.pipeline.animations)["ZivMechFlying"];
 		zivMech.width = 128; zivMech.height = 128;
@@ -418,44 +420,46 @@ PlayMode::PlayMode() : scene(*test_scene) {
 
 	//Bosses
 
-	bossJebb.health =  900.f;
+	bossJebb.health = JEBB_HEALTH;
 	bossJebb.shotCooldown = 10;
 	bossJebb.enemyCooldown = 600;
 	bossJebb.projType = Projectile::PROJ_RapidEnemy;
 	//TEMP SPRITE:
-	bossJebb.sprite = scene.spriteLib["boss"];
+	bossJebb.sprite = scene.spriteLib["Jebb"];
+	bossJebb.initPos = bossJebb.initPos + glm::vec3(0.15f, 0.f, 0.f);
 	bossJebb.sprite.name = "enemyJebb";
 	bossJebb.type = Enemy::BOSS_Jebb;
 	bossJebb.path = std::vector<std::pair<int, glm::vec2>>();
-	bossJebb.path.push_back(std::make_pair(30, glm::vec2(0.f)));
-	bossJebb.path.push_back(std::make_pair(30, glm::vec2(0.f)));
-	float xOffsetJebb = 7.5f;
-	bossJebb.path.push_back(std::make_pair(30, glm::vec2(xOffsetJebb, 0.f)));
-	bossJebb.path.push_back(std::make_pair(30, glm::vec2(xOffsetJebb, 0.f)));
-	bossJebb.path.push_back(std::make_pair(40, glm::vec2(xOffsetJebb, xOffsetJebb / 2.f)));
-	bossJebb.path.push_back(std::make_pair(30, glm::vec2(-xOffsetJebb, xOffsetJebb / 2.f)));
-	bossJebb.path.push_back(std::make_pair(30, glm::vec2(-xOffsetJebb, 0.f)));
-	bossJebb.path.push_back(std::make_pair(30, glm::vec2(-xOffsetJebb, 0.f)));
+	bossJebb.path.push_back(std::make_pair(30, glm::vec2(0.f, 2.5f)));
+	bossJebb.path.push_back(std::make_pair(30, glm::vec2(0.f, 2.5f)));
+	float xOffsetJebb = 7.0f;
+	bossJebb.path.push_back(std::make_pair(30, glm::vec2(xOffsetJebb, 2.5f)));
+	bossJebb.path.push_back(std::make_pair(30, glm::vec2(xOffsetJebb, 2.5f)));
+	bossJebb.path.push_back(std::make_pair(40, glm::vec2(xOffsetJebb, 2.5f + xOffsetJebb / 2.f)));
+	bossJebb.path.push_back(std::make_pair(30, glm::vec2(-xOffsetJebb, 2.5f + xOffsetJebb / 2.f)));
+	bossJebb.path.push_back(std::make_pair(30, glm::vec2(-xOffsetJebb, 2.5f)));
+	bossJebb.path.push_back(std::make_pair(30, glm::vec2(-xOffsetJebb, 2.5f)));
 	bossJebb.shotOffset = glm::vec2(0.f);
 
-	bossDark.health = 2000.f;
+	bossDark.health = DARK_HEALTH;
+	bossDark.initPos += glm::vec3(0.15f, 0.f, 0.f);
 	bossDark.shotCooldown = 10;
 	bossDark.enemyCooldown = 500;
 	bossDark.projType = Projectile::PROJ_RapidEnemy;
 	//TEMP SPRITE:
-	bossDark.sprite = scene.spriteLib["boss"];
+	bossDark.sprite = scene.spriteLib["Jebb"];
 	bossDark.sprite.name = "enemyDark";
 	bossDark.type = Enemy::BOSS_Dark;
 	bossDark.path = std::vector<std::pair<int, glm::vec2>>();
-	bossDark.path.push_back(std::make_pair(20, glm::vec2(0.f)));
-	bossDark.path.push_back(std::make_pair(20, glm::vec2(0.f)));
+	bossDark.path.push_back(std::make_pair(20, glm::vec2(2.5f)));
+	bossDark.path.push_back(std::make_pair(20, glm::vec2(2.5f)));
 	float xOffsetDark = 8.5f;
-	bossDark.path.push_back(std::make_pair(20, glm::vec2(xOffsetDark, 0.f)));
-	bossDark.path.push_back(std::make_pair(20, glm::vec2(xOffsetDark, 0.f)));
-	bossDark.path.push_back(std::make_pair(30, glm::vec2(xOffsetDark, xOffsetDark / 2.f)));
-	bossDark.path.push_back(std::make_pair(20, glm::vec2(-xOffsetDark, xOffsetDark / 2.f)));
-	bossDark.path.push_back(std::make_pair(20, glm::vec2(-xOffsetDark, 0.f)));
-	bossDark.path.push_back(std::make_pair(20, glm::vec2(-xOffsetDark, 0.f)));
+	bossDark.path.push_back(std::make_pair(20, glm::vec2(xOffsetDark, 2.5f)));
+	bossDark.path.push_back(std::make_pair(20, glm::vec2(xOffsetDark, 2.5f)));
+	bossDark.path.push_back(std::make_pair(30, glm::vec2(xOffsetDark, 2.5+ xOffsetDark / 2.f)));
+	bossDark.path.push_back(std::make_pair(20, glm::vec2(-xOffsetDark, 2.5 + xOffsetDark / 2.f)));
+	bossDark.path.push_back(std::make_pair(20, glm::vec2(-xOffsetDark, 2.5f)));
+	bossDark.path.push_back(std::make_pair(20, glm::vec2(-xOffsetDark, 2.5f)));
 	bossDark.shotOffset = glm::vec2(0.f);
 
 	
@@ -1378,7 +1382,7 @@ void PlayMode::updateClouds() {
 	std::vector<std::list<Sprite>::iterator> despawnClouds = std::vector<std::list<Sprite>::iterator>();
 	glm::vec3 posOffsetDelta = level.curoffset();
 	for (std::list<Sprite>::iterator iter = clouds.begin(); iter != clouds.end(); iter++) {
-		if (!level.bossCheck()) iter->pos += level.posOffsetDelta;
+		if (!pauseMode &&  !level.bossCheck()) iter->pos += level.posOffsetDelta;
 		glm::vec3 offsetCamera = camera->transform->make_world_to_local() * glm::vec4(iter->pos, 1.f) + glm::vec3(0.f, 0.f, cloudSpeed);
 		iter->pos = camera->transform->make_local_to_world() * glm::vec4(offsetCamera, 1.0f);
 	}
@@ -1423,7 +1427,8 @@ void PlayMode::updateMechAnimation() {
 		nextAnimation = "ZivMechFlying";
 		break;
 	}
-	if (horiMovement.inTransition) nextAnimation = "ZivMechFlying";
+	if (mech.meleeTimer > 0) nextAnimation = "ZivMechAttack";
+	else if (horiMovement.inTransition) nextAnimation = "ZivMechFlying";
 	if (nextAnimation != mech.playerSprite->pipeline.currentAnimation) mech.playerSprite->pipeline.setAnimation(nextAnimation);
 }
 
@@ -1485,6 +1490,7 @@ void PlayMode::updatestage(float elapsed){
 			newEnemy.segment = 0;
 			newEnemy.framesInSegment = newEnemy.path[0].first;
 			enemies.push_back(newEnemy);
+			bossJebbActive = &enemies.back();
 		}
 		break;
 	case(gameplaystage::gs_boss):
@@ -1530,6 +1536,7 @@ void PlayMode::updatestage(float elapsed){
 			newEnemy.segment = 0;
 			newEnemy.framesInSegment = newEnemy.path[0].first;
 			enemies.push_back(newEnemy);
+			bossDarkActive = &enemies.back();
 		}
 		break;
 	case(gameplaystage::gs_dark):
@@ -1582,6 +1589,15 @@ void PlayMode::resetGame() {
 	isdialogueDisplay = false;
 	continueGame = true;
 	currentstage = gameplaystage::gs_level;
+	bossDarkDefeated = false;
+	bossJebbDefeated = false;
+	bossDarkSpawned = false;
+	bossDark.alive = true;
+	bossDark.health = DARK_HEALTH;
+	bossJebb.alive = true;
+	bossJebb.health = JEBB_HEALTH;
+	bossJebb.framesToDeath = 30;
+	bossDark.framesToDeath = 30;
 
 	mech.playerSprite->pos -= level.totalOffset;
 	mech.reticle->pos -= level.totalOffset;
@@ -1974,6 +1990,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	scene.spriteDraw(*camera, false,false,false);
 	scene.cloudDraw(*camera);
 	scene.spriteDraw(*camera, true, false, false);
+	scene.spriteDraw(*camera, false, false, false,true);
 	scene.spriteDraw(*camera, false, true, false);
 	GL_ERRORS();
 
@@ -2009,13 +2026,35 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	std::string healthString;
 	if(healthPercentage == 100.f) healthString = std::string("Health: ").append(std::to_string(healthPercentage).substr(0,3)).append(" %");
 	else healthString = std::string("Health: ").append(std::to_string(healthPercentage).substr(0, 4)).append("%");
-	if (!isdialogueDisplay)text.displayText(healthString, 0, glm::vec2(-.95f, 0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
+	if (!isdialogueDisplay && !pauseMode)text.displayText(healthString, 0, glm::vec2(-.95f, 0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
+	else if (!isdialogueDisplay) text.displayText("Paused", 0, glm::vec2(-.95f, 0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
+	
+	
+	if (currentstage == gs_boss) {
+		float bosspercentage = (float)((int)(bossJebbActive->health / JEBB_HEALTH * 1000.f)) / 10.f;
+		text.textColor = glm::vec3(1.f, 0.3f, 0.3f);
+		std::string bosshealthString;
+		if (bosspercentage == 100.f) bosshealthString = std::string("Enemy: ").append(std::to_string(bosspercentage).substr(0, 3)).append(" %");
+		else bosshealthString = std::string("Enemy: ").append(std::to_string(bosspercentage).substr(0, 4)).append("%");
+		if (!isdialogueDisplay && !pauseMode) text.displayText(bosshealthString, 0, glm::vec2(0.5f, 0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
+		
+	}
+	if (currentstage == gs_dark) {
+		float bosspercentage = (float)((int)(bossDarkActive->health / DARK_HEALTH * 1000.f)) / 10.f;
+		text.textColor = glm::vec3(1.f, 0.3f, 0.3f);
+		std::string bosshealthString;
+		if (bosspercentage == 100.f) bosshealthString = std::string("Enemy: ").append(std::to_string(bosspercentage).substr(0, 3)).append(" %");
+		else bosshealthString = std::string("Enemy: ").append(std::to_string(bosspercentage).substr(0, 4)).append("%");
+		if (!isdialogueDisplay && !pauseMode) text.displayText(bosshealthString, 0, glm::vec2(0.5f, 0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
+
+	}
+	
 	std::string yourTime = std::to_string((float)((int)(bosstime * 1000.f)) / 1000.f);
 	std::string highTime = std::to_string((float)((int)(highscore * 1000.f)) / 1000.f);
 
 	text.textColor = glm::vec3(0.3f, 1.f, 0.6f);
-	if (!isdialogueDisplay && bossJebbSpawned)text.displayText(yourTime, 0, glm::vec2(-.95f, -0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
-	if (!isdialogueDisplay && bossJebbSpawned)text.displayText(highTime, 0, glm::vec2(.85, -0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
+	if (!isdialogueDisplay && bossJebbSpawned && currentstage == gs_boss)text.displayText(yourTime, 0, glm::vec2(-.95f, -0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
+	if (!isdialogueDisplay && bossJebbSpawned && currentstage == gs_boss)text.displayText(highTime, 0, glm::vec2(.75, -0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
 }
 
 glm::vec3 PlayMode::get_player_position() {

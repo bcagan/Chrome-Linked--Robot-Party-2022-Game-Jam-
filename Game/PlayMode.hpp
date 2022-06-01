@@ -23,6 +23,8 @@
 #define C_NUM_LINES 180
 #define C_MAX_PER_LINE 1200/130
 #define HIGHEST_MAX_CLOUDS 1000
+#define JEBB_HEALTH 700.f
+#define DARK_HEALTH 1500.f
 
 //Global screen width and height
 inline int screenW = 0;
@@ -189,7 +191,8 @@ struct PlayMode : Mode {
 		Enemy envocronMeleePilot;
 		Enemy envocronRangedPilot;
 		Enemy bossJebb;
-		Enemy bossGil;
+		Enemy* bossJebbActive;
+		Enemy* bossDarkActive;
 		Enemy bossDark;
 
 		bool bossJebbDefeated = false;
@@ -226,7 +229,7 @@ struct PlayMode : Mode {
 		int meleeHitInvince = 45;
 		int meleeHitInvinceTimer = 0;
 
-		int meleeTime = 30;
+		int meleeTime = 40;
 		int meleeTimer = 0;
 
 		std::list<Projectile>::iterator reflect;
@@ -304,7 +307,7 @@ struct PlayMode : Mode {
 	bool dialogueEnd = false;
 	bool continueGame = false;
 	float bosstime = 0.f;
-	float highscore = 100.f;
+	float highscore = 225.f;
 	bool win = false;
 	void resetGame();
 	GLuint bgint;
