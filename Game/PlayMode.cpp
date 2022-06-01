@@ -696,9 +696,12 @@ void PlayMode::updateAllEnemies() {
 						iter->meleeTimer = iter->toPlayerTime + iter->attackTime;
 						iter->inMelee = true;
 						iter->attackPos = iter->sprite.pos;
+						if(iter->sprite.pipeline.currentAnimation != "SpikebotFlyingIdle") iter->sprite.pipeline.setAnimation("SpikebotFlyingIdle");
 					}
 					else if(iter->shotTimer > iter->shotCooldown){ //If the melee enemy is actively attacking
 						if (iter->meleeTimer == 0) { //Initialize attack
+
+							iter->sprite.pipeline.setAnimation("SpikebotMeleeAttack");
 							iter->startPos = iter->sprite.pos;
 							iter->inMelee = true;
 							iter->targetPos = offsetPlayerPos;// +glm::vec3(0.f, 0.5f, 0.0f);
@@ -729,6 +732,7 @@ void PlayMode::updateAllEnemies() {
 							iter->shotTimer = 0;
 							iter->meleeTimer = 0;
 							iter->inMelee = false;
+							if (iter->sprite.pipeline.currentAnimation != "SpikebotFlyingIdle") iter->sprite.pipeline.setAnimation("SpikebotFlyingIdle");
 						}
 					}
 					break;
@@ -2027,12 +2031,12 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	quad_texture_program_pipeline.texture = bgint;
 	scene.drawQuad(glm::vec2(-1.f), glm::vec2(2.f));
 
-	scene.draw(*camera);
+	if(currentstage != gs_tutorial) scene.draw(*camera);
 	GL_ERRORS();
-	scene.spriteDraw(*camera, false,false,false);
+	if (currentstage != gs_tutorial)scene.spriteDraw(*camera, false,false,false);
 	scene.cloudDraw(*camera);
-	scene.spriteDraw(*camera, true, false, false);
-	scene.spriteDraw(*camera, false, false, false,true);
+	if (currentstage != gs_tutorial)scene.spriteDraw(*camera, true, false, false);
+	if (currentstage != gs_tutorial)scene.spriteDraw(*camera, false, false, false,true);
 	scene.spriteDraw(*camera, false, true, false);
 	GL_ERRORS();
 

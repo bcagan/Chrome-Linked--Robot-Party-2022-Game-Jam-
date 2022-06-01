@@ -1,9 +1,8 @@
 Bug list:
-Properly add melee and ranged pilots
+Properly add ranged pilots attack animations
 
 Todo:
 Add second building
 Do redo "reflection" lights on buildings
 Produce second testing build
-Add "Title Screen"
 Plan out credits
