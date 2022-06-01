@@ -1,5 +1,5 @@
 Bug list:
-Properly add ranged pilots attack animations
+
 
 Todo:
 Add second building

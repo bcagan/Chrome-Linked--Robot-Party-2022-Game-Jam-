@@ -126,9 +126,9 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		rangebot.pipeline = lit_color_texture_program_sprite_pipeline;
 		rangebot.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
 		rangebot.addAnimation("/Sources/Animations/ANIMATE_NosepassFlyingIdle.txt");
-		rangebot.pipeline.setAnimation("NosepassFlyingIdle");
-		rangebot.pipeline.defaultAnimation = (*rangebot.pipeline.animations)["NosepassFlyingIdle"];
 		rangebot.addAnimation("/Sources/Animations/ANIMATE_NosepassMouthCannon.txt");
+		rangebot.pipeline.setAnimation("NosepassMouthCannon");
+		rangebot.pipeline.defaultAnimation = (*rangebot.pipeline.animations)["NosepassMouthCannon"];
 		rangebot.width = 128; rangebot.height = 128;
 		rangebot.size = glm::vec2(.25f);
 		scene.spriteLib["rangebot"] = rangebot;
@@ -542,7 +542,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	for (int i = (int) cloudMatrixInd.size() - 1; i >= 0; i--) {
 		for (int jl = 0; jl < (int)cloudMatrixInd[i].size(); jl++) {
 			int j = cloudMatrixInd[i][jl];
-				float xPercentage = (float)j / float(C_MAX_PER_LINE);
+				float xPercentage = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 				float zPercentage = (float)i / float(C_NUM_LINES);
 				glm::vec3 inCamPos = glm::vec3((maxCloudX - minCloudX) * xPercentage + minCloudX, 0.f, (maxCloudZ - minCloudZ) * zPercentage + minCloudZ + xPercentage*2.f) ;
 				Sprite newCloud = cloudLib[rand() % cloudLib.size()];
@@ -751,8 +751,9 @@ void PlayMode::updateAllEnemies() {
 						if (iter->shotTimer == iter->shotCooldown) { //Create slow projectile that targets player
 							Projectile newProj = genericProjectile1;
 							newProj.type = Projectile::PROJ_SlowEnemy;
-							newProj.projSprite.pos = iter->sprite.pos;
-							newProj.motionVector = normalize(enemProjSpeed*normalize(offsetPlayerPos + glm::vec3(0.4f) - iter->sprite.pos));
+							newProj.projSprite.pos = iter->sprite.pos + camera->transform->rotation*glm::vec3(glm::vec2(iter->sprite.size.x *iter->sprite.width /SPRITE_SCALE,
+								iter->sprite.size.y * iter->sprite.height / SPRITE_SCALE)/2.f,0.f) ;
+							newProj.motionVector = normalize(enemProjSpeed*normalize(offsetPlayerPos + glm::vec3(0.4f) - newProj.projSprite.pos));
 							projectiles.push_back(newProj);
 							iter->shotTimer = 0;
 						}
@@ -1207,8 +1208,10 @@ std::vector<int> PlayMode::projectileHit(Sprite hitSprite) {
 	float spriteHeight = hitSprite.height * hitSprite.size.y / SPRITE_SCALE * hitSprite.hitBoxSize.y;
 	std::vector<int> ret = std::vector<int>();
 	for (auto& projIt = projectiles.begin(); projIt != projectiles.end(); projIt++) {
-		if (hitSprite.name != "player" && ret.size() > 1) return ret;
-		else if (hitSprite.name == "player" && ret.size() > 4) return ret;
+		if (hitSprite.name != "projectileMelee") {
+			if (hitSprite.name != "player" && ret.size() > 1) return ret;
+			else if (hitSprite.name == "player" && ret.size() > 4) return ret;
+		}
 		Projectile& proj = *projIt;
 		if((proj.type == Projectile::PROJ_RapidPlayer || proj.type == Projectile::PROJ_SlowPlayer || proj.type == Projectile::PROJ_SlowPlayerReflect || proj.type == Projectile::PROJ_Melee)
 			&& ( hitSprite.name.size() > 5 && hitSprite.name.substr(0,5) == std::string("enemy"))) {
@@ -1601,6 +1604,11 @@ void PlayMode::updatestage(float elapsed){
 	}
 }
 
+void PlayMode::resetAll() {
+	resetGame();
+	currentstage = gameplaystage::gs_init;
+}
+
 void PlayMode::resetGame() {
 	curSpawnCheck = toSpawn.begin();
 	std::list<Enemy>::iterator iter = enemies.begin();
@@ -1902,7 +1910,9 @@ void PlayMode::update(float elapsed) {
 		down.downs = 0;
 	}
 	else if (win) {
-		std::cout << "Win!\n";
+		//std::cout << "Win!\n";
+		//Trigger credits	
+		resetAll();
 	}
 	else {
 		resetGame();
@@ -2031,6 +2041,14 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	quad_texture_program_pipeline.texture = bgint;
 	scene.drawQuad(glm::vec2(-1.f), glm::vec2(2.f));
 
+	if (currentstage == gs_tutorial) {
+		mech.controlReticle->doDraw = false;
+		mech.reticle->doDraw = false;
+	}
+	else {
+		mech.reticle->doDraw = true;
+		mech.controlReticle->doDraw = true;
+	}
 	if(currentstage != gs_tutorial) scene.draw(*camera);
 	GL_ERRORS();
 	if (currentstage != gs_tutorial)scene.spriteDraw(*camera, false,false,false);

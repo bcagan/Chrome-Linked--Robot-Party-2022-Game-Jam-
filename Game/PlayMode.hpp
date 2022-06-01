@@ -307,9 +307,10 @@ struct PlayMode : Mode {
 	bool dialogueEnd = false;
 	bool continueGame = false;
 	float bosstime = 0.f;
-	float highscore = 225.f;
+	float highscore = 100.f;
 	bool win = false;
 	void resetGame();
+	void resetAll();
 	GLuint bgint;
 
 	//Misc
