@@ -111,6 +111,28 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		grazaloid.size = glm::vec2(.25f);
 		scene.spriteLib["grazaloid"] = grazaloid;
 
+		Sprite meleebot;
+		meleebot.pipeline = lit_color_texture_program_sprite_pipeline;
+		meleebot.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
+		meleebot.addAnimation("/Sources/Animations/ANIMATE_SpikebotFlyingIdle.txt");
+		meleebot.pipeline.setAnimation("SpikebotFlyingIdle");
+		meleebot.pipeline.defaultAnimation = (*meleebot.pipeline.animations)["SpikebotFlyingIdle"];
+		meleebot.addAnimation("/Sources/Animations/ANIMATE_SpikebotMeleeAttack.txt");
+		meleebot.width = 128; meleebot.height = 128;
+		meleebot.size = glm::vec2(.25f);
+		scene.spriteLib["meleebot"] = meleebot;
+
+		Sprite rangebot;
+		rangebot.pipeline = lit_color_texture_program_sprite_pipeline;
+		rangebot.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
+		rangebot.addAnimation("/Sources/Animations/ANIMATE_NosepassFlyingIdle.txt");
+		rangebot.pipeline.setAnimation("NosepassFlyingIdle");
+		rangebot.pipeline.defaultAnimation = (*rangebot.pipeline.animations)["NosepassFlyingIdle"];
+		rangebot.addAnimation("/Sources/Animations/ANIMATE_NosepassMouthCannon.txt");
+		rangebot.width = 128; rangebot.height = 128;
+		rangebot.size = glm::vec2(.25f);
+		scene.spriteLib["rangebot"] = rangebot;
+
 		Sprite reticle;
 		reticle.pipeline = lit_color_texture_program_sprite_pipeline;
 		reticle.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
