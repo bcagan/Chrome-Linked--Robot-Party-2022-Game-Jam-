@@ -18,23 +18,31 @@ void Sprite::addAnimation(std::string fileName, bool verbosity) {
 		int numLayers, numFrames, frameLength;
 		char intline[32];
 		char nameline[999];
-
+		numFrames = 0;
 
 		//Animation info
 		fstream.getline(intline, 32);
 		nameSize = std::stoi(std::string(intline));
+		if (verbosity) std::cout << "nameSize " << nameSize << std::endl;
 		fstream.getline(nameline, 999);
 		name = std::string(nameline).substr(0,nameSize);
+		if (verbosity) std::cout << "name " << name << std::endl;
 		fstream.getline(intline, 32);
 		width = std::stoi(std::string(intline));
+		if (verbosity) std::cout << "width " << width << std::endl;
 		fstream.getline(intline, 32);
 		height = std::stoi(std::string(intline));
+		if (verbosity) std::cout << "height " << height << std::endl;
 		fstream.getline(intline, 32);
 		numLayers = std::stoi(std::string(intline));
+		if (verbosity) std::cout << "# layers " << numLayers << std::endl;
 		fstream.getline(intline, 32);
-		numFrames = std::stoi(std::string(intline));
+		numFrames = std::atoi(std::string(intline).c_str());
+		if (verbosity) std::cout << "# frames " << numFrames << std::endl;
 		fstream.getline(intline, 32);
 		frameLength = std::stoi(std::string(intline));
+		if (verbosity) std::cout << "frame length " << frameLength << std::endl;
+		if (fileName == "/Sources/Animations/ANIMATE_prologue.txt") numFrames = 8; //IDK WTF is happening here but it keeps turning what is cleary in the file into 64?
 
 		SpriteAnimation animation(numLayers, numFrames);
 		animation.name = name;

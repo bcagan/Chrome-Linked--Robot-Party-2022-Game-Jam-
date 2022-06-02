@@ -233,6 +233,7 @@ struct PlayMode : Mode {
 		int meleeTimer = 0;
 
 		std::list<Projectile>::iterator reflect;
+		bool reflectDef = false;
 	} mech; 
 	void updateMechAnimation();
 
@@ -307,7 +308,7 @@ struct PlayMode : Mode {
 	bool dialogueEnd = false;
 	bool continueGame = false;
 	float bosstime = 0.f;
-	float highscore = 100.f;
+	float highscore = 215.f;
 	bool win = false;
 	void resetGame();
 	void resetAll();

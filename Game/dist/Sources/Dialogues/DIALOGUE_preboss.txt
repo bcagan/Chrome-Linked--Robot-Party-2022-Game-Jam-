@@ -1,5 +1,5 @@
 BG:
-empty.txt
+flashback.txt
 EOB
 PORT:
 ZivPortrait.txt
@@ -10,15 +10,15 @@ EOB
 DIAL:
 1 0 Mysterious Voice: I did not expect Envocron to send anyone so soon. State your name.
 0 0 Ziv: Wait I recognize that voice… Jebb? But I thought I killed you.. t..twice.
-1 0 *EXPOLOSIONS*
-3 0 Terran : *cough* Z…Ziv… is... is that you?
-1 0 *EXPLOSIONS*
-3 0 Terran: Wh…who?
-3 0 Terran: Jebb O'Shenny? But *cough* but I thought you were dead.
-1 0 *ZAPPER SHOT*
-3 0 Terran: Gah!
-0 0 Ziv: N-
-2 0 Jebb: Silence!
+1 1 
+3 2 Terran : *cough* Z…Ziv… is... is that you?
+1 3 
+3 4 Terran: Wh…who?
+3 5 Terran: Jebb O'Shenny? But *cough* but I thought you were dead.
+1 6 
+3 7 Terran: Gah!
+0 8 Ziv: N-
+2 9 Jebb: Silence!
 2 0 Jebb: …Ziv? I could say the same to you as well… well once at least.
 0 0 Ziv: Bastard, first you killed my brother and then you framed me for both of our "deaths".
 0 0 Ziv: What are you even doing with the resistance after killing their "prodigy".

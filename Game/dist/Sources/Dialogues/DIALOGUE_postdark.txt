@@ -1,5 +1,5 @@
 BG:
-empty.txt
+post.txt
 EOB
 PORT:
 ZivPortrait.txt
@@ -13,10 +13,10 @@ DIAL:
 2 0 Gil: Ziv, I’ve been trying to call you. Did something happen
 0 0 Ziv: No. Nothing. I completed your mission
 2 0 Gil : Excellent old boy! Ill see to you getting your reward once your return to HQ. *Gahaha*
-0 0 Ziv: Terran.. n…no… stay with me
-3 0 Terran :  Ziv… its good… to finally see you again...
-0 0 Ziv: Please… look we can both survive this.
-3 0 Terran : Ziv… Everything’s gonna be alright, forever.
-0 0 Ziv : ...
-0 0 Ziv: Yeah, brother… I think I see it now. Everything’s gonna be alright, forever
+0 1 Ziv: Terran.. n…no… stay with me
+3 1 Terran :  Ziv… its good… to finally see you again...
+0 1 Ziv: Please… look we can both survive this.
+3 1 Terran : Ziv… Everything’s gonna be alright, forever.
+0 1 Ziv : ...
+0 1 Ziv: Yeah, brother… I think I see it now. Everything’s gonna be alright, forever
 EOB

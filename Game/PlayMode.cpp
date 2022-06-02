@@ -90,16 +90,6 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	scene.spriteLib = std::unordered_map<std::string, Sprite>();
 
 	{//Create sprites (will be done in dedicated functions in final game)
-		Sprite test; 
-		test.pipeline = lit_color_texture_program_sprite_pipeline;
-		test.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
-		test.addAnimation("/Sources/Animations/ANIMATE_fastTest.txt"); //Fast
-		test.addAnimation("/Sources/Animations/ANIMATE_slowTest.txt"); //Slow
-		test.pipeline.setAnimation("fastTest");
-		test.pipeline.defaultAnimation = (*test.pipeline.animations)["fastTest"];
-		test.width = 16; test.height = 16;
-		test.pipeline.isGui = false;
-		scene.spriteLib["test"] = test;
 
 		Sprite grazaloid;
 		grazaloid.pipeline = lit_color_texture_program_sprite_pipeline;
@@ -143,15 +133,26 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		reticle.size = glm::vec2(0.5f);
 		scene.spriteLib["reticle"] = reticle;
 
+		Sprite ship;
+		ship.pipeline = lit_color_texture_program_sprite_pipeline;
+		ship.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
+		ship.addAnimation("/Sources/Animations/ANIMATE_ShipFlyingIdle.txt");
+		ship.addAnimation("/Sources/Animations/ANIMATE_ShipFlyingIdleW.txt");
+		ship.addAnimation("/Sources/Animations/ANIMATE_ShipFlyingIdleE.txt");
+		ship.pipeline.setAnimation("ShipFlyingIdle");
+		ship.pipeline.defaultAnimation = (*ship.pipeline.animations)["ShipFlyingIdle"];
+		ship.width = 64; ship.height = 64;
+		ship.size = glm::vec2(0.5f/16.f);
+		scene.spriteLib["ship"] = ship;
+
 		Sprite projectile;
 		projectile.pipeline = lit_color_texture_program_sprite_pipeline;
 		projectile.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
-		projectile.addAnimation("/Sources/Animations/ANIMATE_projectile1.txt");
+		projectile.addAnimation("/Sources/Animations/ANIMATE_projectileEnSlow.txt");
 		projectile.pipeline.setAnimation("projectile1");
 		projectile.pipeline.defaultAnimation = (*projectile.pipeline.animations)["projectile1"];
 		projectile.width = 16; projectile.height = 16;
 		projectile.size = glm::vec2(0.5f);
-	//	projectile.addAnimation("/Sources/Animations/ANIMATE_projectileEnSlow.txt");
 		projectile.addAnimation("/Sources/Animations/ANIMATE_projectileEnRapid.txt");
 		projectile.addAnimation("/Sources/Animations/ANIMATE_projectilePlayerSlow.txt");
 		projectile.addAnimation("/Sources/Animations/ANIMATE_projectilePlayerRapid.txt");
@@ -168,6 +169,17 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		bossSpriteJebb.width = 256; bossSpriteJebb.height = 256;
 		bossSpriteJebb.size = glm::vec2(0.75f);
 		scene.spriteLib["Jebb"] = bossSpriteJebb;
+
+		Sprite bossSpriteDark;
+		bossSpriteDark.pipeline = lit_color_texture_program_sprite_pipeline;
+		bossSpriteDark.pipeline.animations = new std::unordered_map<std::string, Sprite::SpriteAnimation>();
+		bossSpriteDark.addAnimation("/Sources/Animations/ANIMATE_DSDBotFlyingIdle.txt");
+		bossSpriteDark.addAnimation("/Sources/Animations/ANIMATE_DSDBotDoubleCannons.txt");
+		bossSpriteDark.pipeline.setAnimation("DSDBotFlyingIdle");
+		bossSpriteDark.pipeline.defaultAnimation = (*bossSpriteDark.pipeline.animations)["DSDBotFlyingIdle"];
+		bossSpriteDark.width = 256; bossSpriteDark.height = 256;
+		bossSpriteDark.size = glm::vec2(0.75f);
+		scene.spriteLib["Dark"] = bossSpriteDark;
 
 		Sprite zivMech;
 		zivMech.pipeline = lit_color_texture_program_sprite_pipeline;
@@ -226,31 +238,69 @@ PlayMode::PlayMode() : scene(*test_scene) {
 		if (data.size() > 0)
 		{
 			glBindTexture(GL_TEXTURE_2D, tex1);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); 
+			glGenerateMipmap(GL_TEXTURE_2D);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
 			glBindTexture(GL_TEXTURE_2D, 1);
 		}
 		else  throw std::runtime_error("Error loading texture"); 
-		filename = data_path(std::string("sources/buidling1specular.png"));
+		filename = data_path(std::string("sources/building1color.png"));
 		GLuint tex2;
 		glGenTextures(1, &tex2);
 		load_png(filename, &size, &data, LowerLeftOrigin);
 		if (data.size() > 0)
 		{
 			glBindTexture(GL_TEXTURE_2D, tex2);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glGenerateMipmap(GL_TEXTURE_2D);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
 			glBindTexture(GL_TEXTURE_2D, 1);
 		}
 		else  throw std::runtime_error("Error loading texture");
-		buildTexts = std::vector<std::pair<GLuint, GLuint>>(1);
-		buildTexts[0] = std::make_pair(tex1, tex2);
+		buildTexts = std::vector<std::pair<GLuint, GLuint>>(2);
+		buildTexts[0] = std::make_pair(tex1, tex2); 
+		filename = data_path(std::string("sources/building2color.png"));
+		GLuint tex3;
+		glGenTextures(1, &tex3);
+		load_png(filename, &size, &data, LowerLeftOrigin);
+		if (data.size() > 0)
+		{
+			glBindTexture(GL_TEXTURE_2D, tex3);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glGenerateMipmap(GL_TEXTURE_2D);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+			glBindTexture(GL_TEXTURE_2D, 1);
+		}
+		else  throw std::runtime_error("Error loading texture"); filename = data_path(std::string("sources/building2specular.png"));
+		GLuint tex4;
+		glGenTextures(1, &tex4);
+		load_png(filename, &size, &data, LowerLeftOrigin);
+		if (data.size() > 0)
+		{
+			glBindTexture(GL_TEXTURE_2D, tex4);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glGenerateMipmap(GL_TEXTURE_2D);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+			glBindTexture(GL_TEXTURE_2D, 1);
+		}
+		else  throw std::runtime_error("Error loading texture");
+		buildTexts[1] = std::make_pair(tex3, tex4);
 
 	}
 
@@ -284,9 +334,6 @@ PlayMode::PlayMode() : scene(*test_scene) {
 			else if (spriteType == "reticle") {
 				newSprite.pos = initPos + glm::vec3(0.f, 0.f, 0.2f);
 				newSprite.name = "reticle";
-				scene.sprites.push_back(newSprite);
-				newSprite.pos = initPos + glm::vec3(1.f, 0.f, 0.2f);
-				newSprite.name = "reticleControl";
 				scene.sprites.push_back(newSprite);
 			}
 
@@ -350,18 +397,19 @@ PlayMode::PlayMode() : scene(*test_scene) {
 			mech.reticle->pipeline.doLight = false;
 			mech.reticle->pipeline.isGui = true;
 		}
-		else if (sprite.name == std::string("reticleControl")) {
-			mech.controlReticle = &sprite;
-			mech.controlReticle->size *= mech.controlReticle->size;
-			mech.controlReticle->pipeline.doLight = false;
-			mech.controlReticle->pipeline.isGui = true;
-		}
 		else if (sprite.name == std::string("textbox")) {
 			textbox = &sprite;
 		}
 	}
 
-
+	Sprite reticleControl = scene.spriteLib["ship"];
+	reticleControl.name = "reticleControl";
+	reticleControl.pos = initPos + glm::vec3(1.f, 0.f, 0.2f);
+	scene.sprites.push_back(reticleControl);
+	mech.controlReticle = &(scene.sprites.back());
+	mech.controlReticle->pipeline.doLight = false;
+	mech.controlReticle->pipeline.isGui = true;
+	mech.controlReticle->size = glm::vec2(0.5f / 3.f);
 
 
 
@@ -420,7 +468,6 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	//Both envocron pilots
 	envocronMeleePilot.path = std::vector<std::pair<int, glm::vec2>>();
 	envocronMeleePilot.path.push_back(std::make_pair(1, glm::vec2(0.0f)));
-	envocronMeleePilot.sprite = scene.spriteLib["test"];
 	envocronMeleePilot.sprite.hitBoxOff = glm::vec2(-0.1 * envocronMeleePilot.sprite.width * envocronMeleePilot.sprite.size.x / SPRITE_SCALE, -0.1 * envocronMeleePilot.sprite.width * envocronMeleePilot.sprite.size.y / SPRITE_SCALE);
 
 	//Hit box offset by 0.1 sprite size on either side 
@@ -481,7 +528,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	bossDark.enemyCooldown = 500;
 	bossDark.projType = Projectile::PROJ_RapidEnemy;
 	//TEMP SPRITE:
-	bossDark.sprite = scene.spriteLib["Jebb"];
+	bossDark.sprite = scene.spriteLib["Dark"];
 	bossDark.sprite.name = "enemyDark";
 	bossDark.type = Enemy::BOSS_Dark;
 	bossDark.path = std::vector<std::pair<int, glm::vec2>>();
@@ -807,7 +854,7 @@ void PlayMode::updateAllEnemies() {
 					iter->enemyTimer++;
 					if (iter->shotTimer == iter->shotCooldown) { //Create 2 rapid projectiles in direction of player
 						Projectile newProj = genericProjectile1;
-						newProj.projSprite.pipeline.setAnimation("projectileEnRapid");
+						newProj.projSprite.pipeline.setAnimation("projectileDark");
 						newProj.type = Projectile::PROJ_RapidEnemy;
 						newProj.projSprite.pos = iter->sprite.pos;
 						newProj.motionVector = normalize(enemProjSpeed * normalize(mech.playerSprite->pos + glm::vec3(0.4f) - iter->sprite.pos));
@@ -994,14 +1041,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			}
 			return true;
 		}
-		else if (evt.key.keysym.sym == SDLK_n) {
-			scene.sprites.front().pipeline.setAnimation("fastTest");
-			return true;
-		}
-		else if (evt.key.keysym.sym == SDLK_m) {
-			//scene.sprites.front().pipeline.setAnimation("slowTest");
-			return true;
-		}
+		
 		else if (evt.key.keysym.sym == SDLK_RSHIFT) {
 			return true;
 		}
@@ -1165,6 +1205,7 @@ void PlayMode::updateProjectiles(float elapsed) {
 		}
 		if (mech.meleeTimer != 0 && mech.reflect != projectiles.end()) {
 			mech.reflect->projSprite.pipeline.currentAnimation = "projectilePlayerSlow";
+			mech.reflectDef = true;
 			mech.reflect->type = Projectile::PROJ_SlowPlayerReflect;
 			mech.reflect->motionVector.y = -mech.reflect->motionVector.y;
 			mech.reflect = projectiles.end();
@@ -1771,9 +1812,26 @@ void PlayMode::update(float elapsed) {
 		float cursorLeft = -cursorRight;
 		glm::vec3 cursorXYZ = glm::vec3((cursorRight - cursorLeft) * cursorPos.x + cursorLeft, (cursorTop - cursorBottom) * cursorPos.y +
 			cursorBottom, 1.f) * -(playerCamDepth + 2.f);
-		if (!pauseMode)mech.controlReticle->pos = scene.cameras.front().transform->make_local_to_world() * glm::vec4(cursorXYZ, 1.f);
+		glm::vec3 oldReticlePos = mech.controlReticle->pos;
+		if (!pauseMode) {
+			mech.controlReticle->pos = scene.cameras.front().transform->make_local_to_world() * glm::vec4(cursorXYZ, 1.f);
+			glm::vec3 posDif = mech.controlReticle->pos - oldReticlePos;
+			if (posDif.x < 0 && posDif.x < -0.15f) {
+				if (mech.controlReticle->pipeline.currentAnimation != "ShipFlyingIdleE")
+					mech.controlReticle->pipeline.setAnimation("ShipFlyingIdleE");
+			}
+			else if (posDif.x > 0 && posDif.x > 0.15f) {
+				if (mech.controlReticle->pipeline.currentAnimation != "ShipFlyingIdleW")
+					mech.controlReticle->pipeline.setAnimation("ShipFlyingIdleW");
+			}
+			else {
+				if (mech.controlReticle->pipeline.currentAnimation != "ShipFlyingIdle")
+					mech.controlReticle->pipeline.setAnimation("ShipFlyingIdle");
+
+			}
+		}
 		float depthDif = (playerCamDepth + 2.f) / (playerCamDepth * 2.f);
-		if (!pauseMode)	mech.controlReticle->size = glm::vec2(depthDif);
+		if (!pauseMode)	mech.controlReticle->size = glm::vec2(depthDif/3.f);
 
 		if (!pauseMode) {
 			if (playerCamHeight + mech.playerSprite->size.y * mech.playerSprite->height / SPRITE_SCALE > maxHeight) {
@@ -1877,7 +1935,7 @@ void PlayMode::update(float elapsed) {
 					mech.health -= 0.3f;
 					break;
 				case(Projectile::PROJ_SlowEnemy):
-					mech.health -= 2.f;
+					if (!mech.reflectDef) mech.health -= 2.f;
 					break;
 				case(Projectile::PROJ_Bomb):
 					mech.health -= 5.0f;
@@ -1893,8 +1951,8 @@ void PlayMode::update(float elapsed) {
 				}
 			}
 		}
+		if (mech.reflectDef)mech.reflectDef = false;
 		if (mech.meleeHitInvinceTimer > 0 && !pauseMode) mech.meleeHitInvinceTimer--;
-		//std::cout << "Health: " << mech.health << std::endl;
 		//If still alive, spawn enemies
 		if (!pauseMode)updateAllEnemies();
 		if (!pauseMode)spawnEnemies();
@@ -1902,7 +1960,6 @@ void PlayMode::update(float elapsed) {
 			glm::vec3 initPos = camera->transform->make_world_to_local() * glm::vec4(enem.sprite.pos, 1.f);
 		}
 
-		//-(float)playerSprite->height -0.3 //|| vertMovement.currentState == vertMovement.STATE_vertSteady
 		//reset button press counters:
 		left.downs = 0;
 		right.downs = 0;

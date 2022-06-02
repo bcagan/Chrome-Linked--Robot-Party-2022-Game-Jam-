@@ -1,5 +1,5 @@
 BG:
-bgtest0.txt
+prologue.txt
 EOB
 PORT:
 ZivPortrait.txt

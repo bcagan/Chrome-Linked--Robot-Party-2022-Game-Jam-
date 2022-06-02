@@ -6,6 +6,7 @@ EmptyPortrait.txt
 EOB
 DIAL:
 0 0 place
-0 1 holder
-0 2 text
+0 1 hold
+0 2 er
+0 3 text
 EOB
