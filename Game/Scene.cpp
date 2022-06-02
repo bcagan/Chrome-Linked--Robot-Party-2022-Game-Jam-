@@ -338,9 +338,11 @@ void Scene::draw(glm::mat4 const& world_to_clip, glm::mat4x3 const& world_to_lig
 			tempTexLocation = std::vector<int>(2);
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, drawable.transform->texInf.first);
+			glGenerateMipmap(GL_TEXTURE_2D); //Regenerate mip-maps each frame
 			tempTexLocation[0] = 0;
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_2D, drawable.transform->texInf.second);
+			glGenerateMipmap(GL_TEXTURE_2D);
 			tempTexLocation[1] = 1;
 			glUniform1iv(glGetUniformLocation(pipeline.program, "TEX_ARR"), 2, tempTexLocation.data());
 		}
