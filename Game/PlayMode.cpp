@@ -365,6 +365,7 @@ PlayMode::PlayMode() : scene(*test_scene) {
 
 	//Text
 	text = Text(std::string("Play-Regular.ttf"), 128);
+	textLarge = Text(std::string("Play-Regular.ttf"), 256);
 	Sprite textboxSprite = scene.spriteLib["textbox"];
 	textboxSprite.name = std::string("textbox");
 	textboxSprite.pipeline.isGui = true;
@@ -1539,6 +1540,7 @@ void PlayMode::updatestage(float elapsed){
 		}
 		break;
 	case(gameplaystage::gs_prologue):
+		//credits();
 		if (dialogueEnd) {
 			dialogueEnd = false;
 			dialogueStart = false;
@@ -1695,6 +1697,64 @@ void PlayMode::resetGame() {
 
 	level.reset();
 
+}
+
+void PlayMode::credits() {
+	creditsFrames++;
+	isdialogueDisplay = false;
+	glClearColor(0.f,0.f,0.f, 1.f);
+	glClearDepth(1.0f); //1.0 is actually the default value to clear the depth buffer to, but FYI you can change it.
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	std::string creditsTile = "Credits:";
+	std::string credits1 = "Programming, Design, 3D Assets, Script - Ben";
+	std::string credits2 = "Character/Enemy Designs, Cutscene Art, Character Portraits - Esskaden";
+	std::string credits3 = "Enemy Renderer/Animator, Optimization Support - Mr. Thee (@PhillipWitz)";
+	std::string ender = "To Be Continued?";
+
+	if (creditsFrames < 60) {
+		text.textColor = glm::vec3(((float)(creditsFrames)/60.f));
+		text.displayText(creditsTile, 0, glm::vec2(-.14, 0.8f), glm::vec2(1.f, 0.2f), 0.0028f);
+		text.displayText(credits1, 0, glm::vec2(-.5, 0.1f), glm::vec2(1.6f, 0.2f), 0.0014f);
+		text.displayText(credits2, 0, glm::vec2(-.8, -0.3f), glm::vec2(1.6f, 0.2f), 0.0014f);
+		text.displayText(credits3, 0, glm::vec2(-.8, -0.7f), glm::vec2(1.6f, 0.2f), 0.0014f);
+
+	}
+	else if (creditsFrames < 480) {
+		text.textColor = glm::vec3(1.f);
+		text.displayText(creditsTile, 0, glm::vec2(-.14, 0.8f), glm::vec2(1.f, 0.2f), 0.0028f);
+		text.displayText(credits1, 0, glm::vec2(-.5, 0.1f), glm::vec2(1.6f, 0.2f), 0.0014f);
+		text.displayText(credits2, 0, glm::vec2(-.8, -0.3f), glm::vec2(1.6f, 0.2f), 0.0014f);
+		text.displayText(credits3, 0, glm::vec2(-.8, -0.7f), glm::vec2(1.6f, 0.2f), 0.0014f);
+
+	}
+	else if (creditsFrames < 540) {
+		text.textColor = glm::vec3(1.f - ((float)(creditsFrames - 480) / 30.f));
+		text.displayText(creditsTile, 0, glm::vec2(-.14, 0.8f), glm::vec2(1.f, 0.2f), 0.0028f);
+		text.displayText(credits1, 0, glm::vec2(-.5, 0.1f), glm::vec2(1.6f, 0.2f), 0.0014f);
+		text.displayText(credits2, 0, glm::vec2(-.8, -0.3f), glm::vec2(1.6f, 0.2f), 0.0014f);
+		text.displayText(credits3, 0, glm::vec2(-.8, -0.7f), glm::vec2(1.6f, 0.2f), 0.0014f);
+
+	}
+	else if (creditsFrames < 600){
+		textLarge.textColor = glm::vec3(((float)(creditsFrames - 540) / 60.f)*0.5f, 0.f, ((float)(creditsFrames - 540) / 60.f)*0.8f);
+		textLarge.displayText(ender, 0, glm::vec2(-.4, 0.f), glm::vec2(1.f, 0.2f), .0028f);
+
+	}
+	else if (creditsFrames < 1020) {
+		textLarge.textColor = glm::vec3(0.5f, 0.f, 8.f);
+		textLarge.displayText(ender, 0, glm::vec2(-.4, 0.f), glm::vec2(1.f, 0.2f), .0028f);
+
+	}
+	else if (creditsFrames < 1080) {
+		textLarge.textColor = glm::vec3(( 1.f - (float)(creditsFrames - 1020) / 60.f) * 0.5f, 0.f, (1.f - (float)(creditsFrames - 1020) / 60.f)*0.8f);
+		textLarge.displayText(ender, 0, glm::vec2(-.4, 0.f), glm::vec2(1.f, 0.2f), .0028f);
+
+	}
+	else {
+		creditsFrames = 0;
+		resetAll();
+	}
 }
 
 void PlayMode::update(float elapsed) {
@@ -1964,9 +2024,7 @@ void PlayMode::update(float elapsed) {
 		down.downs = 0;
 	}
 	else if (win) {
-		//std::cout << "Win!\n";
-		//Trigger credits	
-		resetAll();
+		credits();
 	}
 	else {
 		resetGame();
@@ -2084,16 +2142,16 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 
 	GL_ERRORS();
-	glClearColor(.54f, 0.796f, 0.89f, 1.f);
-	glClearDepth(1.0f); //1.0 is actually the default value to clear the depth buffer to, but FYI you can change it.
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	if (creditsFrames == 0)glClearColor(.54f, 0.796f, 0.89f, 1.f);
+	if (creditsFrames == 0)glClearDepth(1.0f); //1.0 is actually the default value to clear the depth buffer to, but FYI you can change it.
+	if(creditsFrames == 0) glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS); //this is the default depth comparison function, but FYI you can change it.
 
 
 	quad_texture_program_pipeline.texture = bgint;
-	scene.drawQuad(glm::vec2(-1.f), glm::vec2(2.f));
+	if (creditsFrames == 0)scene.drawQuad(glm::vec2(-1.f), glm::vec2(2.f));
 
 	if (currentstage == gs_tutorial) {
 		mech.controlReticle->doDraw = false;
@@ -2103,13 +2161,13 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		mech.reticle->doDraw = true;
 		mech.controlReticle->doDraw = true;
 	}
-	if(currentstage != gs_tutorial) scene.draw(*camera);
+	if(currentstage != gs_tutorial && creditsFrames == 0) scene.draw(*camera);
 	GL_ERRORS();
-	if (currentstage != gs_tutorial)scene.spriteDraw(*camera, false,false,false);
-	scene.cloudDraw(*camera);
-	if (currentstage != gs_tutorial)scene.spriteDraw(*camera, true, false, false);
-	if (currentstage != gs_tutorial)scene.spriteDraw(*camera, false, false, false,true);
-	scene.spriteDraw(*camera, false, true, false);
+	if (currentstage != gs_tutorial && creditsFrames == 0)scene.spriteDraw(*camera, false,false,false);
+	if(creditsFrames == 0) scene.cloudDraw(*camera);
+	if (currentstage != gs_tutorial && creditsFrames == 0)scene.spriteDraw(*camera, true, false, false);
+	if (currentstage != gs_tutorial && creditsFrames == 0)scene.spriteDraw(*camera, false, false, false,true);
+	if (creditsFrames == 0)scene.spriteDraw(*camera, false, true, false);
 	GL_ERRORS();
 
 	
@@ -2135,7 +2193,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	}
 	deleteVec.clear();
 
-	if(isdialogueDisplay) drawTextbox(curDisplay->currentTex(), curDisplay->currentBG().first, curDisplay->currentPortrait().first);
+	if(isdialogueDisplay && creditsFrames == 0) drawTextbox(curDisplay->currentTex(), curDisplay->currentBG().first, curDisplay->currentPortrait().first);
 	
 
 	float healthPercentage = (float)((int)(mech.health / mech.maxHealth * 1000.f)) / 10.f;
@@ -2144,8 +2202,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	std::string healthString;
 	if(healthPercentage == 100.f) healthString = std::string("Health: ").append(std::to_string(healthPercentage).substr(0,3)).append(" %");
 	else healthString = std::string("Health: ").append(std::to_string(healthPercentage).substr(0, 4)).append("%");
-	if (!isdialogueDisplay && !pauseMode)text.displayText(healthString, 0, glm::vec2(-.95f, 0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
-	else if (!isdialogueDisplay) text.displayText("Paused", 0, glm::vec2(-.95f, 0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
+	if (!isdialogueDisplay && !pauseMode && creditsFrames == 0)text.displayText(healthString, 0, glm::vec2(-.95f, 0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
+	else if (!isdialogueDisplay && creditsFrames == 0) text.displayText("Paused", 0, glm::vec2(-.95f, 0.9f), glm::vec2(1.f, 0.2f), 0.0014f);
 	
 	
 	if (currentstage == gs_boss) {

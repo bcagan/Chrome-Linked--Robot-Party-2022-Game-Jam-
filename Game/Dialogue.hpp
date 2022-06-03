@@ -82,6 +82,14 @@ public:
 
 	bool atEnd() { return curLine == data.size() - 1; }
 
+	void end() {
+		curLine = (int)data.size() - 1;
+	}
+
+	void start() {
+		curLine = 0;
+	}
+
 	Dialogue::~Dialogue()
 	{
 	}

@@ -23,7 +23,7 @@
 #define C_NUM_LINES 180
 #define C_MAX_PER_LINE 1200/130
 #define HIGHEST_MAX_CLOUDS 1000
-#define JEBB_HEALTH 700.f
+#define JEBB_HEALTH 650.f
 #define DARK_HEALTH 1500.f
 
 //Global screen width and height
@@ -278,6 +278,7 @@ struct PlayMode : Mode {
 
 	//GUI
 	Text text;
+	Text textLarge;
 	Sprite* textbox;
 	Dialogue prologue;
 	Dialogue preboss;
@@ -313,6 +314,8 @@ struct PlayMode : Mode {
 	void resetGame();
 	void resetAll();
 	GLuint bgint;
+	void credits();
+	int creditsFrames = 0;
 
 	//Misc
 	glm::vec3 offsetPlayerPos = glm::vec3(0.f);
