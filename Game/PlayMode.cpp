@@ -1981,7 +1981,7 @@ void PlayMode::drawTextbox(std::string textStr, GLuint bgTex, GLuint portTex) {
 		text.textColor = glm::vec3(1.f);
 		text.displayText(textStr, 0, glm::vec2(-0.55f, -.6f), glm::vec2(1.1f, 0.4f), 0.0016f);
 		quad_texture_program_pipeline.texture = portTex;
-		scene.drawQuad(glm::vec2(-0.9f,-.995f),glm::vec2(0.3f,0.3f*16.f/10.f));
+		scene.drawQuad(glm::vec2(-0.8775f,-.93f),glm::vec2(0.25f,0.27f*16.f/10.f));
 	}
 }
 
